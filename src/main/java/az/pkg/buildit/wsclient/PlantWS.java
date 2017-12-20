@@ -3,8 +3,7 @@ package az.pkg.buildit.wsclient;public class PlantWS {
     try {
       az.pkg.buildit.wsclient.PlantWSServiceStub stub = new az.pkg.buildit.wsclient.PlantWSServiceStub();
 //      stub.sayHelloWorldFrom();
-    } catch (Exception ex) {
-      ex.printStackTrace();
+    } catch (Exception ex) {      ex.printStackTrace();
     }
 
   }
