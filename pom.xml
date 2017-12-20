@@ -62,7 +62,14 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
-    </dependencies>
+		<!-- https://mvnrepository.com/artifact/org.apache.axis2.wso2/axis2-client -->
+		<dependency>
+			<groupId>org.apache.axis2.wso2</groupId>
+			<artifactId>axis2-client</artifactId>
+			<version>1.6.1.wso2v10</version>
+		</dependency>
+
+	</dependencies>
 
 	<build>
 		<plugins>
