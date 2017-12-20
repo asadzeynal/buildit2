@@ -7,25 +7,71 @@
 package az.pkg.buildit.wsclient;
 
 
+import org.apache.axiom.om.OMAbstractFactory;
+import org.apache.axiom.om.OMAttribute;
+import org.apache.axiom.om.OMElement;
+import org.apache.axiom.om.OMFactory;
+import org.apache.axiom.soap.SOAPEnvelope;
+import org.apache.axiom.soap.SOAPFactory;
+import org.apache.axis2.AxisFault;
+import org.apache.axis2.addressing.EndpointReference;
+import org.apache.axis2.client.FaultMapKey;
+import org.apache.axis2.client.OperationClient;
+import org.apache.axis2.client.ServiceClient;
+import org.apache.axis2.client.Stub;
+import org.apache.axis2.client.async.AxisCallback;
+import org.apache.axis2.context.ConfigurationContext;
+import org.apache.axis2.context.MessageContext;
+import org.apache.axis2.databinding.ADBBean;
+import org.apache.axis2.databinding.ADBDataSource;
+import org.apache.axis2.databinding.ADBException;
+import org.apache.axis2.databinding.utils.BeanUtil;
+import org.apache.axis2.databinding.utils.ConverterUtil;
+import org.apache.axis2.description.AxisOperation;
+import org.apache.axis2.description.AxisService;
+import org.apache.axis2.description.OutInAxisOperation;
+import org.apache.axis2.description.WSDL2Constants;
+import org.apache.axis2.util.CallbackReceiver;
+import org.apache.axis2.util.Utils;
+import org.apache.axis2.wsdl.WSDLConstants;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import javax.xml.namespace.NamespaceContext;
+import javax.xml.namespace.QName;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+import javax.xml.stream.XMLStreamWriter;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Vector;
+
 /*
  *  PlantWSServiceStub java implementation
  */
-public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
+public class PlantWSServiceStub extends Stub {
     private static int counter = 0;
-    protected org.apache.axis2.description.AxisOperation[] _operations;
+    protected AxisOperation[] _operations;
 
     //hashmaps to keep the fault mapping
-    private java.util.HashMap faultExceptionNameMap = new java.util.HashMap();
-    private java.util.HashMap faultExceptionClassNameMap = new java.util.HashMap();
-    private java.util.HashMap faultMessageMap = new java.util.HashMap();
-    private javax.xml.namespace.QName[] opNameArray = null;
+    private HashMap faultExceptionNameMap = new HashMap();
+    private HashMap faultExceptionClassNameMap = new HashMap();
+    private HashMap faultMessageMap = new HashMap();
+    private QName[] opNameArray = null;
 
     /**
      *Constructor that takes in a configContext
      */
     public PlantWSServiceStub(
-        org.apache.axis2.context.ConfigurationContext configurationContext,
-        java.lang.String targetEndpoint) throws org.apache.axis2.AxisFault {
+        ConfigurationContext configurationContext,
+        String targetEndpoint) throws AxisFault {
         this(configurationContext, targetEndpoint, false);
     }
 
@@ -33,18 +79,18 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
      * Constructor that takes in a configContext  and useseperate listner
      */
     public PlantWSServiceStub(
-        org.apache.axis2.context.ConfigurationContext configurationContext,
-        java.lang.String targetEndpoint, boolean useSeparateListener)
-        throws org.apache.axis2.AxisFault {
+        ConfigurationContext configurationContext,
+        String targetEndpoint, boolean useSeparateListener)
+        throws AxisFault {
         //To populate AxisService
         populateAxisService();
         populateFaults();
 
-        _serviceClient = new org.apache.axis2.client.ServiceClient(configurationContext,
+        _serviceClient = new ServiceClient(configurationContext,
                 _service);
 
         _serviceClient.getOptions()
-                      .setTo(new org.apache.axis2.addressing.EndpointReference(
+                      .setTo(new EndpointReference(
                 targetEndpoint));
         _serviceClient.getOptions().setUseSeparateListener(useSeparateListener);
     }
@@ -53,8 +99,8 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
      * Default Constructor
      */
     public PlantWSServiceStub(
-        org.apache.axis2.context.ConfigurationContext configurationContext)
-        throws org.apache.axis2.AxisFault {
+        ConfigurationContext configurationContext)
+        throws AxisFault {
         this(configurationContext,
             "http://localhost:9000/services/az/pkg/rentit/webservice/PlantWS");
     }
@@ -62,19 +108,19 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
     /**
      * Default Constructor
      */
-    public PlantWSServiceStub() throws org.apache.axis2.AxisFault {
+    public PlantWSServiceStub() throws AxisFault {
         this("http://localhost:9000/services/az/pkg/rentit/webservice/PlantWS");
     }
 
     /**
      * Constructor taking the target endpoint
      */
-    public PlantWSServiceStub(java.lang.String targetEndpoint)
-        throws org.apache.axis2.AxisFault {
+    public PlantWSServiceStub(String targetEndpoint)
+        throws AxisFault {
         this(null, targetEndpoint);
     }
 
-    private static synchronized java.lang.String getUniqueSuffix() {
+    private static synchronized String getUniqueSuffix() {
         // reset the counter if it is greater than 99999
         if (counter > 99999) {
             counter = 0;
@@ -82,32 +128,32 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
         counter = counter + 1;
 
-        return java.lang.Long.toString(java.lang.System.currentTimeMillis()) +
+        return Long.toString(System.currentTimeMillis()) +
         "_" + counter;
     }
 
-    private void populateAxisService() throws org.apache.axis2.AxisFault {
+    private void populateAxisService() throws AxisFault {
         //creating the Service with a unique name
-        _service = new org.apache.axis2.description.AxisService(
+        _service = new AxisService(
                 "PlantWSService" + getUniqueSuffix());
         addAnonymousOperations();
 
         //creating the operations
-        org.apache.axis2.description.AxisOperation __operation;
+        AxisOperation __operation;
 
-        _operations = new org.apache.axis2.description.AxisOperation[2];
+        _operations = new AxisOperation[2];
 
-        __operation = new org.apache.axis2.description.OutInAxisOperation();
+        __operation = new OutInAxisOperation();
 
-        __operation.setName(new javax.xml.namespace.QName(
+        __operation.setName(new QName(
                 "http://webservice.rentit.pkg.az/", "listAllPlants"));
         _service.addOperation(__operation);
 
         _operations[0] = __operation;
 
-        __operation = new org.apache.axis2.description.OutInAxisOperation();
+        __operation = new OutInAxisOperation();
 
-        __operation.setName(new javax.xml.namespace.QName(
+        __operation.setName(new QName(
                 "http://webservice.rentit.pkg.az/", "getPlantByID"));
         _service.addOperation(__operation);
 
@@ -124,31 +170,31 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
      * @see az.pkg.buildit.wsclient.PlantWSService#listAllPlants
      * @param listAllPlants0
      */
-    public az.pkg.buildit.wsclient.PlantWSServiceStub.ListAllPlantsResponseE listAllPlants(
-        az.pkg.buildit.wsclient.PlantWSServiceStub.ListAllPlantsE listAllPlants0)
-        throws java.rmi.RemoteException {
-        org.apache.axis2.context.MessageContext _messageContext = new org.apache.axis2.context.MessageContext();
+    public PlantWSServiceStub.ListAllPlantsResponseE listAllPlants(
+        PlantWSServiceStub.ListAllPlantsE listAllPlants0)
+        throws RemoteException {
+        MessageContext _messageContext = new MessageContext();
 
         try {
-            org.apache.axis2.client.OperationClient _operationClient = _serviceClient.createClient(_operations[0].getName());
+            OperationClient _operationClient = _serviceClient.createClient(_operations[0].getName());
             _operationClient.getOptions()
                             .setAction("http://webservice.rentit.pkg.az/PlantWS/listAllPlantsRequest");
             _operationClient.getOptions().setExceptionToBeThrownOnSOAPFault(true);
 
             addPropertyToOperationClient(_operationClient,
-                org.apache.axis2.description.WSDL2Constants.ATTR_WHTTP_QUERY_PARAMETER_SEPARATOR,
+                WSDL2Constants.ATTR_WHTTP_QUERY_PARAMETER_SEPARATOR,
                 "&");
 
             // create SOAP envelope with that payload
-            org.apache.axiom.soap.SOAPEnvelope env = null;
+            SOAPEnvelope env = null;
 
             env = toEnvelope(getFactory(_operationClient.getOptions()
                                                         .getSoapVersionURI()),
                     listAllPlants0,
                     optimizeContent(
-                        new javax.xml.namespace.QName(
+                        new QName(
                             "http://webservice.rentit.pkg.az/", "listAllPlants")),
-                    new javax.xml.namespace.QName(
+                    new QName(
                         "http://webservice.rentit.pkg.az/", "listAllPlants"));
 
             //adding SOAP soap_headers
@@ -162,56 +208,56 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
             //execute the operation client
             _operationClient.execute(true);
 
-            org.apache.axis2.context.MessageContext _returnMessageContext = _operationClient.getMessageContext(org.apache.axis2.wsdl.WSDLConstants.MESSAGE_LABEL_IN_VALUE);
-            org.apache.axiom.soap.SOAPEnvelope _returnEnv = _returnMessageContext.getEnvelope();
+            MessageContext _returnMessageContext = _operationClient.getMessageContext(WSDLConstants.MESSAGE_LABEL_IN_VALUE);
+            SOAPEnvelope _returnEnv = _returnMessageContext.getEnvelope();
 
-            java.lang.Object object = fromOM(_returnEnv.getBody()
+            Object object = fromOM(_returnEnv.getBody()
                                                        .getFirstElement(),
-                    az.pkg.buildit.wsclient.PlantWSServiceStub.ListAllPlantsResponseE.class);
+                    PlantWSServiceStub.ListAllPlantsResponseE.class);
 
-            return (az.pkg.buildit.wsclient.PlantWSServiceStub.ListAllPlantsResponseE) object;
-        } catch (org.apache.axis2.AxisFault f) {
-            org.apache.axiom.om.OMElement faultElt = f.getDetail();
+            return (PlantWSServiceStub.ListAllPlantsResponseE) object;
+        } catch (AxisFault f) {
+            OMElement faultElt = f.getDetail();
 
             if (faultElt != null) {
                 if (faultExceptionNameMap.containsKey(
-                            new org.apache.axis2.client.FaultMapKey(
+                            new FaultMapKey(
                                 faultElt.getQName(), "listAllPlants"))) {
                     //make the fault by reflection
                     try {
-                        java.lang.String exceptionClassName = (java.lang.String) faultExceptionClassNameMap.get(new org.apache.axis2.client.FaultMapKey(
+                        String exceptionClassName = (String) faultExceptionClassNameMap.get(new FaultMapKey(
                                     faultElt.getQName(), "listAllPlants"));
-                        java.lang.Class exceptionClass = java.lang.Class.forName(exceptionClassName);
-                        java.lang.reflect.Constructor constructor = exceptionClass.getConstructor(java.lang.String.class);
-                        java.lang.Exception ex = (java.lang.Exception) constructor.newInstance(f.getMessage());
+                        Class exceptionClass = Class.forName(exceptionClassName);
+                        Constructor constructor = exceptionClass.getConstructor(String.class);
+                        Exception ex = (Exception) constructor.newInstance(f.getMessage());
 
                         //message class
-                        java.lang.String messageClassName = (java.lang.String) faultMessageMap.get(new org.apache.axis2.client.FaultMapKey(
+                        String messageClassName = (String) faultMessageMap.get(new FaultMapKey(
                                     faultElt.getQName(), "listAllPlants"));
-                        java.lang.Class messageClass = java.lang.Class.forName(messageClassName);
-                        java.lang.Object messageObject = fromOM(faultElt,
+                        Class messageClass = Class.forName(messageClassName);
+                        Object messageObject = fromOM(faultElt,
                                 messageClass);
-                        java.lang.reflect.Method m = exceptionClass.getMethod("setFaultMessage",
-                                new java.lang.Class[] { messageClass });
-                        m.invoke(ex, new java.lang.Object[] { messageObject });
+                        Method m = exceptionClass.getMethod("setFaultMessage",
+                                new Class[] { messageClass });
+                        m.invoke(ex, new Object[] { messageObject });
 
-                        throw new java.rmi.RemoteException(ex.getMessage(), ex);
-                    } catch (java.lang.ClassCastException e) {
+                        throw new RemoteException(ex.getMessage(), ex);
+                    } catch (ClassCastException e) {
                         // we cannot intantiate the class - throw the original Axis fault
                         throw f;
-                    } catch (java.lang.ClassNotFoundException e) {
+                    } catch (ClassNotFoundException e) {
                         // we cannot intantiate the class - throw the original Axis fault
                         throw f;
-                    } catch (java.lang.NoSuchMethodException e) {
+                    } catch (NoSuchMethodException e) {
                         // we cannot intantiate the class - throw the original Axis fault
                         throw f;
-                    } catch (java.lang.reflect.InvocationTargetException e) {
+                    } catch (InvocationTargetException e) {
                         // we cannot intantiate the class - throw the original Axis fault
                         throw f;
-                    } catch (java.lang.IllegalAccessException e) {
+                    } catch (IllegalAccessException e) {
                         // we cannot intantiate the class - throw the original Axis fault
                         throw f;
-                    } catch (java.lang.InstantiationException e) {
+                    } catch (InstantiationException e) {
                         // we cannot intantiate the class - throw the original Axis fault
                         throw f;
                     }
@@ -236,30 +282,30 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
      * @param listAllPlants0
      */
     public void startlistAllPlants(
-        az.pkg.buildit.wsclient.PlantWSServiceStub.ListAllPlantsE listAllPlants0,
-        final az.pkg.buildit.wsclient.PlantWSServiceCallbackHandler callback)
-        throws java.rmi.RemoteException {
-        org.apache.axis2.client.OperationClient _operationClient = _serviceClient.createClient(_operations[0].getName());
+        PlantWSServiceStub.ListAllPlantsE listAllPlants0,
+        final PlantWSServiceCallbackHandler callback)
+        throws RemoteException {
+        OperationClient _operationClient = _serviceClient.createClient(_operations[0].getName());
         _operationClient.getOptions()
                         .setAction("http://webservice.rentit.pkg.az/PlantWS/listAllPlantsRequest");
         _operationClient.getOptions().setExceptionToBeThrownOnSOAPFault(true);
 
         addPropertyToOperationClient(_operationClient,
-            org.apache.axis2.description.WSDL2Constants.ATTR_WHTTP_QUERY_PARAMETER_SEPARATOR,
+            WSDL2Constants.ATTR_WHTTP_QUERY_PARAMETER_SEPARATOR,
             "&");
 
         // create SOAP envelope with that payload
-        org.apache.axiom.soap.SOAPEnvelope env = null;
-        final org.apache.axis2.context.MessageContext _messageContext = new org.apache.axis2.context.MessageContext();
+        SOAPEnvelope env = null;
+        final MessageContext _messageContext = new MessageContext();
 
         //Style is Doc.
         env = toEnvelope(getFactory(_operationClient.getOptions()
                                                     .getSoapVersionURI()),
                 listAllPlants0,
                 optimizeContent(
-                    new javax.xml.namespace.QName(
+                    new QName(
                         "http://webservice.rentit.pkg.az/", "listAllPlants")),
-                new javax.xml.namespace.QName(
+                new QName(
                     "http://webservice.rentit.pkg.az/", "listAllPlants"));
 
         // adding SOAP soap_headers
@@ -270,72 +316,72 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         // add the message context to the operation client
         _operationClient.addMessageContext(_messageContext);
 
-        _operationClient.setCallback(new org.apache.axis2.client.async.AxisCallback() {
+        _operationClient.setCallback(new AxisCallback() {
                 public void onMessage(
-                    org.apache.axis2.context.MessageContext resultContext) {
+                    MessageContext resultContext) {
                     try {
-                        org.apache.axiom.soap.SOAPEnvelope resultEnv = resultContext.getEnvelope();
+                        SOAPEnvelope resultEnv = resultContext.getEnvelope();
 
-                        java.lang.Object object = fromOM(resultEnv.getBody()
+                        Object object = fromOM(resultEnv.getBody()
                                                                   .getFirstElement(),
-                                az.pkg.buildit.wsclient.PlantWSServiceStub.ListAllPlantsResponseE.class);
-                        callback.receiveResultlistAllPlants((az.pkg.buildit.wsclient.PlantWSServiceStub.ListAllPlantsResponseE) object);
-                    } catch (org.apache.axis2.AxisFault e) {
+                                PlantWSServiceStub.ListAllPlantsResponseE.class);
+                        callback.receiveResultlistAllPlants((PlantWSServiceStub.ListAllPlantsResponseE) object);
+                    } catch (AxisFault e) {
                         callback.receiveErrorlistAllPlants(e);
                     }
                 }
 
-                public void onError(java.lang.Exception error) {
-                    if (error instanceof org.apache.axis2.AxisFault) {
-                        org.apache.axis2.AxisFault f = (org.apache.axis2.AxisFault) error;
-                        org.apache.axiom.om.OMElement faultElt = f.getDetail();
+                public void onError(Exception error) {
+                    if (error instanceof AxisFault) {
+                        AxisFault f = (AxisFault) error;
+                        OMElement faultElt = f.getDetail();
 
                         if (faultElt != null) {
                             if (faultExceptionNameMap.containsKey(
-                                        new org.apache.axis2.client.FaultMapKey(
+                                        new FaultMapKey(
                                             faultElt.getQName(), "listAllPlants"))) {
                                 //make the fault by reflection
                                 try {
-                                    java.lang.String exceptionClassName = (java.lang.String) faultExceptionClassNameMap.get(new org.apache.axis2.client.FaultMapKey(
+                                    String exceptionClassName = (String) faultExceptionClassNameMap.get(new FaultMapKey(
                                                 faultElt.getQName(),
                                                 "listAllPlants"));
-                                    java.lang.Class exceptionClass = java.lang.Class.forName(exceptionClassName);
-                                    java.lang.reflect.Constructor constructor = exceptionClass.getConstructor(java.lang.String.class);
-                                    java.lang.Exception ex = (java.lang.Exception) constructor.newInstance(f.getMessage());
+                                    Class exceptionClass = Class.forName(exceptionClassName);
+                                    Constructor constructor = exceptionClass.getConstructor(String.class);
+                                    Exception ex = (Exception) constructor.newInstance(f.getMessage());
 
                                     //message class
-                                    java.lang.String messageClassName = (java.lang.String) faultMessageMap.get(new org.apache.axis2.client.FaultMapKey(
+                                    String messageClassName = (String) faultMessageMap.get(new FaultMapKey(
                                                 faultElt.getQName(),
                                                 "listAllPlants"));
-                                    java.lang.Class messageClass = java.lang.Class.forName(messageClassName);
-                                    java.lang.Object messageObject = fromOM(faultElt,
+                                    Class messageClass = Class.forName(messageClassName);
+                                    Object messageObject = fromOM(faultElt,
                                             messageClass);
-                                    java.lang.reflect.Method m = exceptionClass.getMethod("setFaultMessage",
-                                            new java.lang.Class[] { messageClass });
+                                    Method m = exceptionClass.getMethod("setFaultMessage",
+                                            new Class[] { messageClass });
                                     m.invoke(ex,
-                                        new java.lang.Object[] { messageObject });
+                                        new Object[] { messageObject });
 
-                                    callback.receiveErrorlistAllPlants(new java.rmi.RemoteException(
+                                    callback.receiveErrorlistAllPlants(new RemoteException(
                                             ex.getMessage(), ex));
-                                } catch (java.lang.ClassCastException e) {
+                                } catch (ClassCastException e) {
                                     // we cannot intantiate the class - throw the original Axis fault
                                     callback.receiveErrorlistAllPlants(f);
-                                } catch (java.lang.ClassNotFoundException e) {
+                                } catch (ClassNotFoundException e) {
                                     // we cannot intantiate the class - throw the original Axis fault
                                     callback.receiveErrorlistAllPlants(f);
-                                } catch (java.lang.NoSuchMethodException e) {
+                                } catch (NoSuchMethodException e) {
                                     // we cannot intantiate the class - throw the original Axis fault
                                     callback.receiveErrorlistAllPlants(f);
-                                } catch (java.lang.reflect.InvocationTargetException e) {
+                                } catch (InvocationTargetException e) {
                                     // we cannot intantiate the class - throw the original Axis fault
                                     callback.receiveErrorlistAllPlants(f);
-                                } catch (java.lang.IllegalAccessException e) {
+                                } catch (IllegalAccessException e) {
                                     // we cannot intantiate the class - throw the original Axis fault
                                     callback.receiveErrorlistAllPlants(f);
-                                } catch (java.lang.InstantiationException e) {
+                                } catch (InstantiationException e) {
                                     // we cannot intantiate the class - throw the original Axis fault
                                     callback.receiveErrorlistAllPlants(f);
-                                } catch (org.apache.axis2.AxisFault e) {
+                                } catch (AxisFault e) {
                                     // we cannot intantiate the class - throw the original Axis fault
                                     callback.receiveErrorlistAllPlants(f);
                                 }
@@ -351,8 +397,8 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                 }
 
                 public void onFault(
-                    org.apache.axis2.context.MessageContext faultContext) {
-                    org.apache.axis2.AxisFault fault = org.apache.axis2.util.Utils.getInboundFaultFromMessageContext(faultContext);
+                    MessageContext faultContext) {
+                    AxisFault fault = Utils.getInboundFaultFromMessageContext(faultContext);
                     onError(fault);
                 }
 
@@ -360,17 +406,17 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                     try {
                         _messageContext.getTransportOut().getSender()
                                        .cleanup(_messageContext);
-                    } catch (org.apache.axis2.AxisFault axisFault) {
+                    } catch (AxisFault axisFault) {
                         callback.receiveErrorlistAllPlants(axisFault);
                     }
                 }
             });
 
-        org.apache.axis2.util.CallbackReceiver _callbackReceiver = null;
+        CallbackReceiver _callbackReceiver = null;
 
         if ((_operations[0].getMessageReceiver() == null) &&
                 _operationClient.getOptions().isUseSeparateListener()) {
-            _callbackReceiver = new org.apache.axis2.util.CallbackReceiver();
+            _callbackReceiver = new CallbackReceiver();
             _operations[0].setMessageReceiver(_callbackReceiver);
         }
 
@@ -384,31 +430,31 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
      * @see az.pkg.buildit.wsclient.PlantWSService#getPlantByID
      * @param getPlantByID2
      */
-    public az.pkg.buildit.wsclient.PlantWSServiceStub.GetPlantByIDResponseE getPlantByID(
-        az.pkg.buildit.wsclient.PlantWSServiceStub.GetPlantByIDE getPlantByID2)
-        throws java.rmi.RemoteException {
-        org.apache.axis2.context.MessageContext _messageContext = new org.apache.axis2.context.MessageContext();
+    public PlantWSServiceStub.GetPlantByIDResponseE getPlantByID(
+        PlantWSServiceStub.GetPlantByIDE getPlantByID2)
+        throws RemoteException {
+        MessageContext _messageContext = new MessageContext();
 
         try {
-            org.apache.axis2.client.OperationClient _operationClient = _serviceClient.createClient(_operations[1].getName());
+            OperationClient _operationClient = _serviceClient.createClient(_operations[1].getName());
             _operationClient.getOptions()
                             .setAction("http://webservice.rentit.pkg.az/PlantWS/getPlantByIDRequest");
             _operationClient.getOptions().setExceptionToBeThrownOnSOAPFault(true);
 
             addPropertyToOperationClient(_operationClient,
-                org.apache.axis2.description.WSDL2Constants.ATTR_WHTTP_QUERY_PARAMETER_SEPARATOR,
+                WSDL2Constants.ATTR_WHTTP_QUERY_PARAMETER_SEPARATOR,
                 "&");
 
             // create SOAP envelope with that payload
-            org.apache.axiom.soap.SOAPEnvelope env = null;
+            SOAPEnvelope env = null;
 
             env = toEnvelope(getFactory(_operationClient.getOptions()
                                                         .getSoapVersionURI()),
                     getPlantByID2,
                     optimizeContent(
-                        new javax.xml.namespace.QName(
+                        new QName(
                             "http://webservice.rentit.pkg.az/", "getPlantByID")),
-                    new javax.xml.namespace.QName(
+                    new QName(
                         "http://webservice.rentit.pkg.az/", "getPlantByID"));
 
             //adding SOAP soap_headers
@@ -422,56 +468,56 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
             //execute the operation client
             _operationClient.execute(true);
 
-            org.apache.axis2.context.MessageContext _returnMessageContext = _operationClient.getMessageContext(org.apache.axis2.wsdl.WSDLConstants.MESSAGE_LABEL_IN_VALUE);
-            org.apache.axiom.soap.SOAPEnvelope _returnEnv = _returnMessageContext.getEnvelope();
+            MessageContext _returnMessageContext = _operationClient.getMessageContext(WSDLConstants.MESSAGE_LABEL_IN_VALUE);
+            SOAPEnvelope _returnEnv = _returnMessageContext.getEnvelope();
 
-            java.lang.Object object = fromOM(_returnEnv.getBody()
+            Object object = fromOM(_returnEnv.getBody()
                                                        .getFirstElement(),
-                    az.pkg.buildit.wsclient.PlantWSServiceStub.GetPlantByIDResponseE.class);
+                    PlantWSServiceStub.GetPlantByIDResponseE.class);
 
-            return (az.pkg.buildit.wsclient.PlantWSServiceStub.GetPlantByIDResponseE) object;
-        } catch (org.apache.axis2.AxisFault f) {
-            org.apache.axiom.om.OMElement faultElt = f.getDetail();
+            return (PlantWSServiceStub.GetPlantByIDResponseE) object;
+        } catch (AxisFault f) {
+            OMElement faultElt = f.getDetail();
 
             if (faultElt != null) {
                 if (faultExceptionNameMap.containsKey(
-                            new org.apache.axis2.client.FaultMapKey(
+                            new FaultMapKey(
                                 faultElt.getQName(), "getPlantByID"))) {
                     //make the fault by reflection
                     try {
-                        java.lang.String exceptionClassName = (java.lang.String) faultExceptionClassNameMap.get(new org.apache.axis2.client.FaultMapKey(
+                        String exceptionClassName = (String) faultExceptionClassNameMap.get(new FaultMapKey(
                                     faultElt.getQName(), "getPlantByID"));
-                        java.lang.Class exceptionClass = java.lang.Class.forName(exceptionClassName);
-                        java.lang.reflect.Constructor constructor = exceptionClass.getConstructor(java.lang.String.class);
-                        java.lang.Exception ex = (java.lang.Exception) constructor.newInstance(f.getMessage());
+                        Class exceptionClass = Class.forName(exceptionClassName);
+                        Constructor constructor = exceptionClass.getConstructor(String.class);
+                        Exception ex = (Exception) constructor.newInstance(f.getMessage());
 
                         //message class
-                        java.lang.String messageClassName = (java.lang.String) faultMessageMap.get(new org.apache.axis2.client.FaultMapKey(
+                        String messageClassName = (String) faultMessageMap.get(new FaultMapKey(
                                     faultElt.getQName(), "getPlantByID"));
-                        java.lang.Class messageClass = java.lang.Class.forName(messageClassName);
-                        java.lang.Object messageObject = fromOM(faultElt,
+                        Class messageClass = Class.forName(messageClassName);
+                        Object messageObject = fromOM(faultElt,
                                 messageClass);
-                        java.lang.reflect.Method m = exceptionClass.getMethod("setFaultMessage",
-                                new java.lang.Class[] { messageClass });
-                        m.invoke(ex, new java.lang.Object[] { messageObject });
+                        Method m = exceptionClass.getMethod("setFaultMessage",
+                                new Class[] { messageClass });
+                        m.invoke(ex, new Object[] { messageObject });
 
-                        throw new java.rmi.RemoteException(ex.getMessage(), ex);
-                    } catch (java.lang.ClassCastException e) {
+                        throw new RemoteException(ex.getMessage(), ex);
+                    } catch (ClassCastException e) {
                         // we cannot intantiate the class - throw the original Axis fault
                         throw f;
-                    } catch (java.lang.ClassNotFoundException e) {
+                    } catch (ClassNotFoundException e) {
                         // we cannot intantiate the class - throw the original Axis fault
                         throw f;
-                    } catch (java.lang.NoSuchMethodException e) {
+                    } catch (NoSuchMethodException e) {
                         // we cannot intantiate the class - throw the original Axis fault
                         throw f;
-                    } catch (java.lang.reflect.InvocationTargetException e) {
+                    } catch (InvocationTargetException e) {
                         // we cannot intantiate the class - throw the original Axis fault
                         throw f;
-                    } catch (java.lang.IllegalAccessException e) {
+                    } catch (IllegalAccessException e) {
                         // we cannot intantiate the class - throw the original Axis fault
                         throw f;
-                    } catch (java.lang.InstantiationException e) {
+                    } catch (InstantiationException e) {
                         // we cannot intantiate the class - throw the original Axis fault
                         throw f;
                     }
@@ -496,30 +542,30 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
      * @param getPlantByID2
      */
     public void startgetPlantByID(
-        az.pkg.buildit.wsclient.PlantWSServiceStub.GetPlantByIDE getPlantByID2,
-        final az.pkg.buildit.wsclient.PlantWSServiceCallbackHandler callback)
-        throws java.rmi.RemoteException {
-        org.apache.axis2.client.OperationClient _operationClient = _serviceClient.createClient(_operations[1].getName());
+        PlantWSServiceStub.GetPlantByIDE getPlantByID2,
+        final PlantWSServiceCallbackHandler callback)
+        throws RemoteException {
+        OperationClient _operationClient = _serviceClient.createClient(_operations[1].getName());
         _operationClient.getOptions()
                         .setAction("http://webservice.rentit.pkg.az/PlantWS/getPlantByIDRequest");
         _operationClient.getOptions().setExceptionToBeThrownOnSOAPFault(true);
 
         addPropertyToOperationClient(_operationClient,
-            org.apache.axis2.description.WSDL2Constants.ATTR_WHTTP_QUERY_PARAMETER_SEPARATOR,
+            WSDL2Constants.ATTR_WHTTP_QUERY_PARAMETER_SEPARATOR,
             "&");
 
         // create SOAP envelope with that payload
-        org.apache.axiom.soap.SOAPEnvelope env = null;
-        final org.apache.axis2.context.MessageContext _messageContext = new org.apache.axis2.context.MessageContext();
+        SOAPEnvelope env = null;
+        final MessageContext _messageContext = new MessageContext();
 
         //Style is Doc.
         env = toEnvelope(getFactory(_operationClient.getOptions()
                                                     .getSoapVersionURI()),
                 getPlantByID2,
                 optimizeContent(
-                    new javax.xml.namespace.QName(
+                    new QName(
                         "http://webservice.rentit.pkg.az/", "getPlantByID")),
-                new javax.xml.namespace.QName(
+                new QName(
                     "http://webservice.rentit.pkg.az/", "getPlantByID"));
 
         // adding SOAP soap_headers
@@ -530,72 +576,72 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         // add the message context to the operation client
         _operationClient.addMessageContext(_messageContext);
 
-        _operationClient.setCallback(new org.apache.axis2.client.async.AxisCallback() {
+        _operationClient.setCallback(new AxisCallback() {
                 public void onMessage(
-                    org.apache.axis2.context.MessageContext resultContext) {
+                    MessageContext resultContext) {
                     try {
-                        org.apache.axiom.soap.SOAPEnvelope resultEnv = resultContext.getEnvelope();
+                        SOAPEnvelope resultEnv = resultContext.getEnvelope();
 
-                        java.lang.Object object = fromOM(resultEnv.getBody()
+                        Object object = fromOM(resultEnv.getBody()
                                                                   .getFirstElement(),
-                                az.pkg.buildit.wsclient.PlantWSServiceStub.GetPlantByIDResponseE.class);
-                        callback.receiveResultgetPlantByID((az.pkg.buildit.wsclient.PlantWSServiceStub.GetPlantByIDResponseE) object);
-                    } catch (org.apache.axis2.AxisFault e) {
+                                PlantWSServiceStub.GetPlantByIDResponseE.class);
+                        callback.receiveResultgetPlantByID((PlantWSServiceStub.GetPlantByIDResponseE) object);
+                    } catch (AxisFault e) {
                         callback.receiveErrorgetPlantByID(e);
                     }
                 }
 
-                public void onError(java.lang.Exception error) {
-                    if (error instanceof org.apache.axis2.AxisFault) {
-                        org.apache.axis2.AxisFault f = (org.apache.axis2.AxisFault) error;
-                        org.apache.axiom.om.OMElement faultElt = f.getDetail();
+                public void onError(Exception error) {
+                    if (error instanceof AxisFault) {
+                        AxisFault f = (AxisFault) error;
+                        OMElement faultElt = f.getDetail();
 
                         if (faultElt != null) {
                             if (faultExceptionNameMap.containsKey(
-                                        new org.apache.axis2.client.FaultMapKey(
+                                        new FaultMapKey(
                                             faultElt.getQName(), "getPlantByID"))) {
                                 //make the fault by reflection
                                 try {
-                                    java.lang.String exceptionClassName = (java.lang.String) faultExceptionClassNameMap.get(new org.apache.axis2.client.FaultMapKey(
+                                    String exceptionClassName = (String) faultExceptionClassNameMap.get(new FaultMapKey(
                                                 faultElt.getQName(),
                                                 "getPlantByID"));
-                                    java.lang.Class exceptionClass = java.lang.Class.forName(exceptionClassName);
-                                    java.lang.reflect.Constructor constructor = exceptionClass.getConstructor(java.lang.String.class);
-                                    java.lang.Exception ex = (java.lang.Exception) constructor.newInstance(f.getMessage());
+                                    Class exceptionClass = Class.forName(exceptionClassName);
+                                    Constructor constructor = exceptionClass.getConstructor(String.class);
+                                    Exception ex = (Exception) constructor.newInstance(f.getMessage());
 
                                     //message class
-                                    java.lang.String messageClassName = (java.lang.String) faultMessageMap.get(new org.apache.axis2.client.FaultMapKey(
+                                    String messageClassName = (String) faultMessageMap.get(new FaultMapKey(
                                                 faultElt.getQName(),
                                                 "getPlantByID"));
-                                    java.lang.Class messageClass = java.lang.Class.forName(messageClassName);
-                                    java.lang.Object messageObject = fromOM(faultElt,
+                                    Class messageClass = Class.forName(messageClassName);
+                                    Object messageObject = fromOM(faultElt,
                                             messageClass);
-                                    java.lang.reflect.Method m = exceptionClass.getMethod("setFaultMessage",
-                                            new java.lang.Class[] { messageClass });
+                                    Method m = exceptionClass.getMethod("setFaultMessage",
+                                            new Class[] { messageClass });
                                     m.invoke(ex,
-                                        new java.lang.Object[] { messageObject });
+                                        new Object[] { messageObject });
 
-                                    callback.receiveErrorgetPlantByID(new java.rmi.RemoteException(
+                                    callback.receiveErrorgetPlantByID(new RemoteException(
                                             ex.getMessage(), ex));
-                                } catch (java.lang.ClassCastException e) {
+                                } catch (ClassCastException e) {
                                     // we cannot intantiate the class - throw the original Axis fault
                                     callback.receiveErrorgetPlantByID(f);
-                                } catch (java.lang.ClassNotFoundException e) {
+                                } catch (ClassNotFoundException e) {
                                     // we cannot intantiate the class - throw the original Axis fault
                                     callback.receiveErrorgetPlantByID(f);
-                                } catch (java.lang.NoSuchMethodException e) {
+                                } catch (NoSuchMethodException e) {
                                     // we cannot intantiate the class - throw the original Axis fault
                                     callback.receiveErrorgetPlantByID(f);
-                                } catch (java.lang.reflect.InvocationTargetException e) {
+                                } catch (InvocationTargetException e) {
                                     // we cannot intantiate the class - throw the original Axis fault
                                     callback.receiveErrorgetPlantByID(f);
-                                } catch (java.lang.IllegalAccessException e) {
+                                } catch (IllegalAccessException e) {
                                     // we cannot intantiate the class - throw the original Axis fault
                                     callback.receiveErrorgetPlantByID(f);
-                                } catch (java.lang.InstantiationException e) {
+                                } catch (InstantiationException e) {
                                     // we cannot intantiate the class - throw the original Axis fault
                                     callback.receiveErrorgetPlantByID(f);
-                                } catch (org.apache.axis2.AxisFault e) {
+                                } catch (AxisFault e) {
                                     // we cannot intantiate the class - throw the original Axis fault
                                     callback.receiveErrorgetPlantByID(f);
                                 }
@@ -611,8 +657,8 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                 }
 
                 public void onFault(
-                    org.apache.axis2.context.MessageContext faultContext) {
-                    org.apache.axis2.AxisFault fault = org.apache.axis2.util.Utils.getInboundFaultFromMessageContext(faultContext);
+                    MessageContext faultContext) {
+                    AxisFault fault = Utils.getInboundFaultFromMessageContext(faultContext);
                     onError(fault);
                 }
 
@@ -620,17 +666,17 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                     try {
                         _messageContext.getTransportOut().getSender()
                                        .cleanup(_messageContext);
-                    } catch (org.apache.axis2.AxisFault axisFault) {
+                    } catch (AxisFault axisFault) {
                         callback.receiveErrorgetPlantByID(axisFault);
                     }
                 }
             });
 
-        org.apache.axis2.util.CallbackReceiver _callbackReceiver = null;
+        CallbackReceiver _callbackReceiver = null;
 
         if ((_operations[1].getMessageReceiver() == null) &&
                 _operationClient.getOptions().isUseSeparateListener()) {
-            _callbackReceiver = new org.apache.axis2.util.CallbackReceiver();
+            _callbackReceiver = new CallbackReceiver();
             _operations[1].setMessageReceiver(_callbackReceiver);
         }
 
@@ -638,7 +684,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         _operationClient.execute(false);
     }
 
-    private boolean optimizeContent(javax.xml.namespace.QName opName) {
+    private boolean optimizeContent(QName opName) {
         if (opNameArray == null) {
             return false;
         }
@@ -652,84 +698,84 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         return false;
     }
 
-    private org.apache.axiom.om.OMElement toOM(
-        az.pkg.buildit.wsclient.PlantWSServiceStub.ListAllPlantsE param,
-        boolean optimizeContent) throws org.apache.axis2.AxisFault {
+    private OMElement toOM(
+        PlantWSServiceStub.ListAllPlantsE param,
+        boolean optimizeContent) throws AxisFault {
         try {
-            return param.getOMElement(az.pkg.buildit.wsclient.PlantWSServiceStub.ListAllPlantsE.MY_QNAME,
-                org.apache.axiom.om.OMAbstractFactory.getOMFactory());
-        } catch (org.apache.axis2.databinding.ADBException e) {
-            throw org.apache.axis2.AxisFault.makeFault(e);
+            return param.getOMElement(PlantWSServiceStub.ListAllPlantsE.MY_QNAME,
+                OMAbstractFactory.getOMFactory());
+        } catch (ADBException e) {
+            throw AxisFault.makeFault(e);
         }
     }
 
-    private org.apache.axiom.om.OMElement toOM(
-        az.pkg.buildit.wsclient.PlantWSServiceStub.ListAllPlantsResponseE param,
-        boolean optimizeContent) throws org.apache.axis2.AxisFault {
+    private OMElement toOM(
+        PlantWSServiceStub.ListAllPlantsResponseE param,
+        boolean optimizeContent) throws AxisFault {
         try {
-            return param.getOMElement(az.pkg.buildit.wsclient.PlantWSServiceStub.ListAllPlantsResponseE.MY_QNAME,
-                org.apache.axiom.om.OMAbstractFactory.getOMFactory());
-        } catch (org.apache.axis2.databinding.ADBException e) {
-            throw org.apache.axis2.AxisFault.makeFault(e);
+            return param.getOMElement(PlantWSServiceStub.ListAllPlantsResponseE.MY_QNAME,
+                OMAbstractFactory.getOMFactory());
+        } catch (ADBException e) {
+            throw AxisFault.makeFault(e);
         }
     }
 
-    private org.apache.axiom.om.OMElement toOM(
-        az.pkg.buildit.wsclient.PlantWSServiceStub.GetPlantByIDE param,
-        boolean optimizeContent) throws org.apache.axis2.AxisFault {
+    private OMElement toOM(
+        PlantWSServiceStub.GetPlantByIDE param,
+        boolean optimizeContent) throws AxisFault {
         try {
-            return param.getOMElement(az.pkg.buildit.wsclient.PlantWSServiceStub.GetPlantByIDE.MY_QNAME,
-                org.apache.axiom.om.OMAbstractFactory.getOMFactory());
-        } catch (org.apache.axis2.databinding.ADBException e) {
-            throw org.apache.axis2.AxisFault.makeFault(e);
+            return param.getOMElement(PlantWSServiceStub.GetPlantByIDE.MY_QNAME,
+                OMAbstractFactory.getOMFactory());
+        } catch (ADBException e) {
+            throw AxisFault.makeFault(e);
         }
     }
 
-    private org.apache.axiom.om.OMElement toOM(
-        az.pkg.buildit.wsclient.PlantWSServiceStub.GetPlantByIDResponseE param,
-        boolean optimizeContent) throws org.apache.axis2.AxisFault {
+    private OMElement toOM(
+        PlantWSServiceStub.GetPlantByIDResponseE param,
+        boolean optimizeContent) throws AxisFault {
         try {
-            return param.getOMElement(az.pkg.buildit.wsclient.PlantWSServiceStub.GetPlantByIDResponseE.MY_QNAME,
-                org.apache.axiom.om.OMAbstractFactory.getOMFactory());
-        } catch (org.apache.axis2.databinding.ADBException e) {
-            throw org.apache.axis2.AxisFault.makeFault(e);
+            return param.getOMElement(PlantWSServiceStub.GetPlantByIDResponseE.MY_QNAME,
+                OMAbstractFactory.getOMFactory());
+        } catch (ADBException e) {
+            throw AxisFault.makeFault(e);
         }
     }
 
-    private org.apache.axiom.soap.SOAPEnvelope toEnvelope(
-        org.apache.axiom.soap.SOAPFactory factory,
-        az.pkg.buildit.wsclient.PlantWSServiceStub.ListAllPlantsE param,
-        boolean optimizeContent, javax.xml.namespace.QName elementQName)
-        throws org.apache.axis2.AxisFault {
+    private SOAPEnvelope toEnvelope(
+        SOAPFactory factory,
+        PlantWSServiceStub.ListAllPlantsE param,
+        boolean optimizeContent, QName elementQName)
+        throws AxisFault {
         try {
-            org.apache.axiom.soap.SOAPEnvelope emptyEnvelope = factory.getDefaultEnvelope();
+            SOAPEnvelope emptyEnvelope = factory.getDefaultEnvelope();
             emptyEnvelope.getBody()
                          .addChild(param.getOMElement(
-                    az.pkg.buildit.wsclient.PlantWSServiceStub.ListAllPlantsE.MY_QNAME,
+                    PlantWSServiceStub.ListAllPlantsE.MY_QNAME,
                     factory));
 
             return emptyEnvelope;
-        } catch (org.apache.axis2.databinding.ADBException e) {
-            throw org.apache.axis2.AxisFault.makeFault(e);
+        } catch (ADBException e) {
+            throw AxisFault.makeFault(e);
         }
     }
 
     /* methods to provide back word compatibility */
-    private org.apache.axiom.soap.SOAPEnvelope toEnvelope(
-        org.apache.axiom.soap.SOAPFactory factory,
-        az.pkg.buildit.wsclient.PlantWSServiceStub.GetPlantByIDE param,
-        boolean optimizeContent, javax.xml.namespace.QName elementQName)
-        throws org.apache.axis2.AxisFault {
+    private SOAPEnvelope toEnvelope(
+        SOAPFactory factory,
+        PlantWSServiceStub.GetPlantByIDE param,
+        boolean optimizeContent, QName elementQName)
+        throws AxisFault {
         try {
-            org.apache.axiom.soap.SOAPEnvelope emptyEnvelope = factory.getDefaultEnvelope();
+            SOAPEnvelope emptyEnvelope = factory.getDefaultEnvelope();
             emptyEnvelope.getBody()
                          .addChild(param.getOMElement(
-                    az.pkg.buildit.wsclient.PlantWSServiceStub.GetPlantByIDE.MY_QNAME,
+                    PlantWSServiceStub.GetPlantByIDE.MY_QNAME,
                     factory));
 
             return emptyEnvelope;
-        } catch (org.apache.axis2.databinding.ADBException e) {
-            throw org.apache.axis2.AxisFault.makeFault(e);
+        } catch (ADBException e) {
+            throw AxisFault.makeFault(e);
         }
     }
 
@@ -738,42 +784,42 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
     /**
      *  get the default envelope
      */
-    private org.apache.axiom.soap.SOAPEnvelope toEnvelope(
-        org.apache.axiom.soap.SOAPFactory factory) {
+    private SOAPEnvelope toEnvelope(
+        SOAPFactory factory) {
         return factory.getDefaultEnvelope();
     }
 
-    private java.lang.Object fromOM(org.apache.axiom.om.OMElement param,
-        java.lang.Class type) throws org.apache.axis2.AxisFault {
+    private Object fromOM(OMElement param,
+        Class type) throws AxisFault {
         try {
-            if (az.pkg.buildit.wsclient.PlantWSServiceStub.GetPlantByIDE.class.equals(
+            if (PlantWSServiceStub.GetPlantByIDE.class.equals(
                         type)) {
-                return az.pkg.buildit.wsclient.PlantWSServiceStub.GetPlantByIDE.Factory.parse(param.getXMLStreamReaderWithoutCaching());
+                return PlantWSServiceStub.GetPlantByIDE.Factory.parse(param.getXMLStreamReaderWithoutCaching());
             }
 
-            if (az.pkg.buildit.wsclient.PlantWSServiceStub.GetPlantByIDResponseE.class.equals(
+            if (PlantWSServiceStub.GetPlantByIDResponseE.class.equals(
                         type)) {
-                return az.pkg.buildit.wsclient.PlantWSServiceStub.GetPlantByIDResponseE.Factory.parse(param.getXMLStreamReaderWithoutCaching());
+                return PlantWSServiceStub.GetPlantByIDResponseE.Factory.parse(param.getXMLStreamReaderWithoutCaching());
             }
 
-            if (az.pkg.buildit.wsclient.PlantWSServiceStub.ListAllPlantsE.class.equals(
+            if (PlantWSServiceStub.ListAllPlantsE.class.equals(
                         type)) {
-                return az.pkg.buildit.wsclient.PlantWSServiceStub.ListAllPlantsE.Factory.parse(param.getXMLStreamReaderWithoutCaching());
+                return PlantWSServiceStub.ListAllPlantsE.Factory.parse(param.getXMLStreamReaderWithoutCaching());
             }
 
-            if (az.pkg.buildit.wsclient.PlantWSServiceStub.ListAllPlantsResponseE.class.equals(
+            if (PlantWSServiceStub.ListAllPlantsResponseE.class.equals(
                         type)) {
-                return az.pkg.buildit.wsclient.PlantWSServiceStub.ListAllPlantsResponseE.Factory.parse(param.getXMLStreamReaderWithoutCaching());
+                return PlantWSServiceStub.ListAllPlantsResponseE.Factory.parse(param.getXMLStreamReaderWithoutCaching());
             }
-        } catch (java.lang.Exception e) {
-            throw org.apache.axis2.AxisFault.makeFault(e);
+        } catch (Exception e) {
+            throw AxisFault.makeFault(e);
         }
 
         return null;
     }
 
     //http://localhost:9000/services/az/pkg/rentit/webservice/PlantWS
-    public static class GetPlantByIDResponse implements org.apache.axis2.databinding.ADBBean {
+    public static class GetPlantByIDResponse implements ADBBean {
         /* This type was generated from the piece of schema that had
            name = getPlantByIDResponse
            Namespace URI = http://webservice.rentit.pkg.az/
@@ -819,27 +865,27 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          * @param factory
          * @return org.apache.axiom.om.OMElement
          */
-        public org.apache.axiom.om.OMElement getOMElement(
-            final javax.xml.namespace.QName parentQName,
-            final org.apache.axiom.om.OMFactory factory)
-            throws org.apache.axis2.databinding.ADBException {
-            return factory.createOMElement(new org.apache.axis2.databinding.ADBDataSource(
+        public OMElement getOMElement(
+            final QName parentQName,
+            final OMFactory factory)
+            throws ADBException {
+            return factory.createOMElement(new ADBDataSource(
                     this, parentQName));
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException,
+                ADBException {
             serialize(parentQName, xmlWriter, false);
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter, boolean serializeType)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
-            java.lang.String prefix = null;
-            java.lang.String namespace = null;
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter, boolean serializeType)
+            throws XMLStreamException,
+                ADBException {
+            String prefix = null;
+            String namespace = null;
 
             prefix = parentQName.getPrefix();
             namespace = parentQName.getNamespaceURI();
@@ -847,7 +893,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                 xmlWriter);
 
             if (serializeType) {
-                java.lang.String namespacePrefix = registerPrefix(xmlWriter,
+                String namespacePrefix = registerPrefix(xmlWriter,
                         "http://webservice.rentit.pkg.az/");
 
                 if ((namespacePrefix != null) &&
@@ -864,34 +910,34 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
             if (local_returnTracker) {
                 if (local_return == null) {
-                    throw new org.apache.axis2.databinding.ADBException(
+                    throw new ADBException(
                         "return cannot be null!!");
                 }
 
-                local_return.serialize(new javax.xml.namespace.QName("",
+                local_return.serialize(new QName("",
                         "return"), xmlWriter);
             }
 
             xmlWriter.writeEndElement();
         }
 
-        private static java.lang.String generatePrefix(
-            java.lang.String namespace) {
+        private static String generatePrefix(
+            String namespace) {
             if (namespace.equals("http://webservice.rentit.pkg.az/")) {
                 return "ns1";
             }
 
-            return org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+            return BeanUtil.getUniquePrefix();
         }
 
         /**
          * Utility method to write an element start tag.
          */
-        private void writeStartElement(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String localPart,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeStartElement(String prefix,
+            String namespace, String localPart,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeStartElement(writerPrefix, localPart, namespace);
@@ -911,12 +957,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute with the ns prefix
          */
-        private void writeAttribute(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String attName,
-            java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeAttribute(String prefix,
+            String namespace, String attName,
+            String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeAttribute(writerPrefix, namespace, attName,
@@ -931,10 +977,10 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeAttribute(java.lang.String namespace,
-            java.lang.String attName, java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeAttribute(String namespace,
+            String attName, String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (namespace.equals("")) {
                 xmlWriter.writeAttribute(attName, attValue);
             } else {
@@ -946,18 +992,18 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeQNameAttribute(java.lang.String namespace,
-            java.lang.String attName, javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String attributeNamespace = qname.getNamespaceURI();
-            java.lang.String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
+        private void writeQNameAttribute(String namespace,
+            String attName, QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String attributeNamespace = qname.getNamespaceURI();
+            String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
 
             if (attributePrefix == null) {
                 attributePrefix = registerPrefix(xmlWriter, attributeNamespace);
             }
 
-            java.lang.String attributeValue;
+            String attributeValue;
 
             if (attributePrefix.trim().length() > 0) {
                 attributeValue = attributePrefix + ":" + qname.getLocalPart();
@@ -977,13 +1023,13 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          *  method to handle Qnames
          */
-        private void writeQName(javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String namespaceURI = qname.getNamespaceURI();
+        private void writeQName(QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String namespaceURI = qname.getNamespaceURI();
 
             if (namespaceURI != null) {
-                java.lang.String prefix = xmlWriter.getPrefix(namespaceURI);
+                String prefix = xmlWriter.getPrefix(namespaceURI);
 
                 if (prefix == null) {
                     prefix = generatePrefix(namespaceURI);
@@ -993,28 +1039,28 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                 if (prefix.trim().length() > 0) {
                     xmlWriter.writeCharacters(prefix + ":" +
-                        org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        ConverterUtil.convertToString(
                             qname));
                 } else {
                     // i.e this is the default namespace
-                    xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                    xmlWriter.writeCharacters(ConverterUtil.convertToString(
                             qname));
                 }
             } else {
-                xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                xmlWriter.writeCharacters(ConverterUtil.convertToString(
                         qname));
             }
         }
 
-        private void writeQNames(javax.xml.namespace.QName[] qnames,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeQNames(QName[] qnames,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (qnames != null) {
                 // we have to store this data until last moment since it is not possible to write any
                 // namespace data after writing the charactor data
-                java.lang.StringBuffer stringToWrite = new java.lang.StringBuffer();
-                java.lang.String namespaceURI = null;
-                java.lang.String prefix = null;
+                StringBuffer stringToWrite = new StringBuffer();
+                String namespaceURI = null;
+                String prefix = null;
 
                 for (int i = 0; i < qnames.length; i++) {
                     if (i > 0) {
@@ -1034,14 +1080,14 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                         if (prefix.trim().length() > 0) {
                             stringToWrite.append(prefix).append(":")
-                                         .append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                                         .append(ConverterUtil.convertToString(
                                     qnames[i]));
                         } else {
-                            stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                            stringToWrite.append(ConverterUtil.convertToString(
                                     qnames[i]));
                         }
                     } else {
-                        stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        stringToWrite.append(ConverterUtil.convertToString(
                                 qnames[i]));
                     }
                 }
@@ -1053,25 +1099,25 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Register a namespace prefix
          */
-        private java.lang.String registerPrefix(
-            javax.xml.stream.XMLStreamWriter xmlWriter,
-            java.lang.String namespace)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String prefix = xmlWriter.getPrefix(namespace);
+        private String registerPrefix(
+            XMLStreamWriter xmlWriter,
+            String namespace)
+            throws XMLStreamException {
+            String prefix = xmlWriter.getPrefix(namespace);
 
             if (prefix == null) {
                 prefix = generatePrefix(namespace);
 
-                javax.xml.namespace.NamespaceContext nsContext = xmlWriter.getNamespaceContext();
+                NamespaceContext nsContext = xmlWriter.getNamespaceContext();
 
                 while (true) {
-                    java.lang.String uri = nsContext.getNamespaceURI(prefix);
+                    String uri = nsContext.getNamespaceURI(prefix);
 
                     if ((uri == null) || (uri.length() == 0)) {
                         break;
                     }
 
-                    prefix = org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+                    prefix = BeanUtil.getUniquePrefix();
                 }
 
                 xmlWriter.writeNamespace(prefix, namespace);
@@ -1085,7 +1131,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          *  Factory class that keeps the parse method
          */
         public static class Factory {
-            private static org.apache.commons.logging.Log log = org.apache.commons.logging.LogFactory.getLog(Factory.class);
+            private static Log log = LogFactory.getLog(Factory.class);
 
             /**
              * static method to create the object
@@ -1095,15 +1141,15 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
              *                If this object is a complex type, the reader is positioned at the end element of its outer element
              */
             public static GetPlantByIDResponse parse(
-                javax.xml.stream.XMLStreamReader reader)
-                throws java.lang.Exception {
+                XMLStreamReader reader)
+                throws Exception {
                 GetPlantByIDResponse object = new GetPlantByIDResponse();
 
                 int event;
-                javax.xml.namespace.QName currentQName = null;
-                java.lang.String nillableValue = null;
-                java.lang.String prefix = "";
-                java.lang.String namespaceuri = "";
+                QName currentQName = null;
+                String nillableValue = null;
+                String prefix = "";
+                String namespaceuri = "";
 
                 try {
                     while (!reader.isStartElement() && !reader.isEndElement())
@@ -1114,11 +1160,11 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                     if (reader.getAttributeValue(
                                 "http://www.w3.org/2001/XMLSchema-instance",
                                 "type") != null) {
-                        java.lang.String fullTypeName = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
+                        String fullTypeName = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
                                 "type");
 
                         if (fullTypeName != null) {
-                            java.lang.String nsPrefix = null;
+                            String nsPrefix = null;
 
                             if (fullTypeName.indexOf(":") > -1) {
                                 nsPrefix = fullTypeName.substring(0,
@@ -1127,12 +1173,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                             nsPrefix = (nsPrefix == null) ? "" : nsPrefix;
 
-                            java.lang.String type = fullTypeName.substring(fullTypeName.indexOf(
+                            String type = fullTypeName.substring(fullTypeName.indexOf(
                                         ":") + 1);
 
                             if (!"getPlantByIDResponse".equals(type)) {
                                 //find namespace for the prefix
-                                java.lang.String nsUri = reader.getNamespaceContext()
+                                String nsUri = reader.getNamespaceContext()
                                                                .getNamespaceURI(nsPrefix);
 
                                 return (GetPlantByIDResponse) ExtensionMapper.getTypeObject(nsUri,
@@ -1143,7 +1189,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     // Note all attributes that were handled. Used to differ normal attributes
                     // from anyAttributes.
-                    java.util.Vector handledAttributes = new java.util.Vector();
+                    Vector handledAttributes = new Vector();
 
                     reader.next();
 
@@ -1151,7 +1197,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                         reader.next();
 
                     if (reader.isStartElement() &&
-                            new javax.xml.namespace.QName("", "return").equals(
+                            new QName("", "return").equals(
                                 reader.getName())) {
                         object.set_return(Plant.Factory.parse(reader));
 
@@ -1166,11 +1212,11 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     if (reader.isStartElement()) {
                         // 2 - A start element we are not expecting indicates a trailing invalid property
-                        throw new org.apache.axis2.databinding.ADBException(
+                        throw new ADBException(
                             "Unexpected subelement " + reader.getName());
                     }
-                } catch (javax.xml.stream.XMLStreamException e) {
-                    throw new java.lang.Exception(e);
+                } catch (XMLStreamException e) {
+                    throw new Exception(e);
                 }
 
                 return object;
@@ -1178,7 +1224,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         } //end of factory class
     }
 
-    public static class Plant implements org.apache.axis2.databinding.ADBBean {
+    public static class Plant implements ADBBean {
         /* This type was generated from the piece of schema that had
            name = plant
            Namespace URI = http://webservice.rentit.pkg.az/
@@ -1199,7 +1245,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * field for Description
          */
-        protected java.lang.String localDescription;
+        protected String localDescription;
 
         /*  This tracker boolean wil be used to detect whether the user called the set method
          *   for this attribute. It will be used to determine whether to include this field
@@ -1215,7 +1261,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * field for Name
          */
-        protected java.lang.String localName;
+        protected String localName;
 
         /*  This tracker boolean wil be used to detect whether the user called the set method
          *   for this attribute. It will be used to determine whether to include this field
@@ -1270,7 +1316,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          * Auto generated getter method
          * @return java.lang.String
          */
-        public java.lang.String getDescription() {
+        public String getDescription() {
             return localDescription;
         }
 
@@ -1278,7 +1324,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          * Auto generated setter method
          * @param param Description
          */
-        public void setDescription(java.lang.String param) {
+        public void setDescription(String param) {
             localDescriptionTracker = param != null;
 
             this.localDescription = param;
@@ -1308,7 +1354,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          * Auto generated getter method
          * @return java.lang.String
          */
-        public java.lang.String getName() {
+        public String getName() {
             return localName;
         }
 
@@ -1316,7 +1362,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          * Auto generated setter method
          * @param param Name
          */
-        public void setName(java.lang.String param) {
+        public void setName(String param) {
             localNameTracker = param != null;
 
             this.localName = param;
@@ -1364,7 +1410,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
             //update the setting tracker
             localPosTracker = true;
 
-            java.util.List list = org.apache.axis2.databinding.utils.ConverterUtil.toList(localPos);
+            List list = ConverterUtil.toList(localPos);
             list.add(param);
             this.localPos = (PurchaseOrder[]) list.toArray(new PurchaseOrder[list.size()]);
         }
@@ -1391,27 +1437,27 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          * @param factory
          * @return org.apache.axiom.om.OMElement
          */
-        public org.apache.axiom.om.OMElement getOMElement(
-            final javax.xml.namespace.QName parentQName,
-            final org.apache.axiom.om.OMFactory factory)
-            throws org.apache.axis2.databinding.ADBException {
-            return factory.createOMElement(new org.apache.axis2.databinding.ADBDataSource(
+        public OMElement getOMElement(
+            final QName parentQName,
+            final OMFactory factory)
+            throws ADBException {
+            return factory.createOMElement(new ADBDataSource(
                     this, parentQName));
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException,
+                ADBException {
             serialize(parentQName, xmlWriter, false);
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter, boolean serializeType)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
-            java.lang.String prefix = null;
-            java.lang.String namespace = null;
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter, boolean serializeType)
+            throws XMLStreamException,
+                ADBException {
+            String prefix = null;
+            String namespace = null;
 
             prefix = parentQName.getPrefix();
             namespace = parentQName.getNamespaceURI();
@@ -1419,7 +1465,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                 xmlWriter);
 
             if (serializeType) {
-                java.lang.String namespacePrefix = registerPrefix(xmlWriter,
+                String namespacePrefix = registerPrefix(xmlWriter,
                         "http://webservice.rentit.pkg.az/");
 
                 if ((namespacePrefix != null) &&
@@ -1436,11 +1482,11 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
             if (localCurrentStatusTracker) {
                 if (localCurrentStatus == null) {
-                    throw new org.apache.axis2.databinding.ADBException(
+                    throw new ADBException(
                         "currentStatus cannot be null!!");
                 }
 
-                localCurrentStatus.serialize(new javax.xml.namespace.QName("",
+                localCurrentStatus.serialize(new QName("",
                         "currentStatus"), xmlWriter);
             }
 
@@ -1450,7 +1496,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                 if (localDescription == null) {
                     // write the nil attribute
-                    throw new org.apache.axis2.databinding.ADBException(
+                    throw new ADBException(
                         "description cannot be null!!");
                 } else {
                     xmlWriter.writeCharacters(localDescription);
@@ -1462,11 +1508,11 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
             namespace = "";
             writeStartElement(null, namespace, "id", xmlWriter);
 
-            if (localId == java.lang.Long.MIN_VALUE) {
-                throw new org.apache.axis2.databinding.ADBException(
+            if (localId == Long.MIN_VALUE) {
+                throw new ADBException(
                     "id cannot be null!!");
             } else {
-                xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                xmlWriter.writeCharacters(ConverterUtil.convertToString(
                         localId));
             }
 
@@ -1478,7 +1524,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                 if (localName == null) {
                     // write the nil attribute
-                    throw new org.apache.axis2.databinding.ADBException(
+                    throw new ADBException(
                         "name cannot be null!!");
                 } else {
                     xmlWriter.writeCharacters(localName);
@@ -1491,7 +1537,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                 if (localPos != null) {
                     for (int i = 0; i < localPos.length; i++) {
                         if (localPos[i] != null) {
-                            localPos[i].serialize(new javax.xml.namespace.QName(
+                            localPos[i].serialize(new QName(
                                     "", "pos"), xmlWriter);
                         } else {
                             writeStartElement(null, "", "pos", xmlWriter);
@@ -1517,11 +1563,11 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
             namespace = "";
             writeStartElement(null, namespace, "price", xmlWriter);
 
-            if (java.lang.Double.isNaN(localPrice)) {
-                throw new org.apache.axis2.databinding.ADBException(
+            if (Double.isNaN(localPrice)) {
+                throw new ADBException(
                     "price cannot be null!!");
             } else {
-                xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                xmlWriter.writeCharacters(ConverterUtil.convertToString(
                         localPrice));
             }
 
@@ -1530,23 +1576,23 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
             xmlWriter.writeEndElement();
         }
 
-        private static java.lang.String generatePrefix(
-            java.lang.String namespace) {
+        private static String generatePrefix(
+            String namespace) {
             if (namespace.equals("http://webservice.rentit.pkg.az/")) {
                 return "ns1";
             }
 
-            return org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+            return BeanUtil.getUniquePrefix();
         }
 
         /**
          * Utility method to write an element start tag.
          */
-        private void writeStartElement(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String localPart,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeStartElement(String prefix,
+            String namespace, String localPart,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeStartElement(writerPrefix, localPart, namespace);
@@ -1566,12 +1612,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute with the ns prefix
          */
-        private void writeAttribute(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String attName,
-            java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeAttribute(String prefix,
+            String namespace, String attName,
+            String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeAttribute(writerPrefix, namespace, attName,
@@ -1586,10 +1632,10 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeAttribute(java.lang.String namespace,
-            java.lang.String attName, java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeAttribute(String namespace,
+            String attName, String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (namespace.equals("")) {
                 xmlWriter.writeAttribute(attName, attValue);
             } else {
@@ -1601,18 +1647,18 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeQNameAttribute(java.lang.String namespace,
-            java.lang.String attName, javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String attributeNamespace = qname.getNamespaceURI();
-            java.lang.String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
+        private void writeQNameAttribute(String namespace,
+            String attName, QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String attributeNamespace = qname.getNamespaceURI();
+            String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
 
             if (attributePrefix == null) {
                 attributePrefix = registerPrefix(xmlWriter, attributeNamespace);
             }
 
-            java.lang.String attributeValue;
+            String attributeValue;
 
             if (attributePrefix.trim().length() > 0) {
                 attributeValue = attributePrefix + ":" + qname.getLocalPart();
@@ -1632,13 +1678,13 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          *  method to handle Qnames
          */
-        private void writeQName(javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String namespaceURI = qname.getNamespaceURI();
+        private void writeQName(QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String namespaceURI = qname.getNamespaceURI();
 
             if (namespaceURI != null) {
-                java.lang.String prefix = xmlWriter.getPrefix(namespaceURI);
+                String prefix = xmlWriter.getPrefix(namespaceURI);
 
                 if (prefix == null) {
                     prefix = generatePrefix(namespaceURI);
@@ -1648,28 +1694,28 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                 if (prefix.trim().length() > 0) {
                     xmlWriter.writeCharacters(prefix + ":" +
-                        org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        ConverterUtil.convertToString(
                             qname));
                 } else {
                     // i.e this is the default namespace
-                    xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                    xmlWriter.writeCharacters(ConverterUtil.convertToString(
                             qname));
                 }
             } else {
-                xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                xmlWriter.writeCharacters(ConverterUtil.convertToString(
                         qname));
             }
         }
 
-        private void writeQNames(javax.xml.namespace.QName[] qnames,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeQNames(QName[] qnames,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (qnames != null) {
                 // we have to store this data until last moment since it is not possible to write any
                 // namespace data after writing the charactor data
-                java.lang.StringBuffer stringToWrite = new java.lang.StringBuffer();
-                java.lang.String namespaceURI = null;
-                java.lang.String prefix = null;
+                StringBuffer stringToWrite = new StringBuffer();
+                String namespaceURI = null;
+                String prefix = null;
 
                 for (int i = 0; i < qnames.length; i++) {
                     if (i > 0) {
@@ -1689,14 +1735,14 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                         if (prefix.trim().length() > 0) {
                             stringToWrite.append(prefix).append(":")
-                                         .append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                                         .append(ConverterUtil.convertToString(
                                     qnames[i]));
                         } else {
-                            stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                            stringToWrite.append(ConverterUtil.convertToString(
                                     qnames[i]));
                         }
                     } else {
-                        stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        stringToWrite.append(ConverterUtil.convertToString(
                                 qnames[i]));
                     }
                 }
@@ -1708,25 +1754,25 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Register a namespace prefix
          */
-        private java.lang.String registerPrefix(
-            javax.xml.stream.XMLStreamWriter xmlWriter,
-            java.lang.String namespace)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String prefix = xmlWriter.getPrefix(namespace);
+        private String registerPrefix(
+            XMLStreamWriter xmlWriter,
+            String namespace)
+            throws XMLStreamException {
+            String prefix = xmlWriter.getPrefix(namespace);
 
             if (prefix == null) {
                 prefix = generatePrefix(namespace);
 
-                javax.xml.namespace.NamespaceContext nsContext = xmlWriter.getNamespaceContext();
+                NamespaceContext nsContext = xmlWriter.getNamespaceContext();
 
                 while (true) {
-                    java.lang.String uri = nsContext.getNamespaceURI(prefix);
+                    String uri = nsContext.getNamespaceURI(prefix);
 
                     if ((uri == null) || (uri.length() == 0)) {
                         break;
                     }
 
-                    prefix = org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+                    prefix = BeanUtil.getUniquePrefix();
                 }
 
                 xmlWriter.writeNamespace(prefix, namespace);
@@ -1740,7 +1786,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          *  Factory class that keeps the parse method
          */
         public static class Factory {
-            private static org.apache.commons.logging.Log log = org.apache.commons.logging.LogFactory.getLog(Factory.class);
+            private static Log log = LogFactory.getLog(Factory.class);
 
             /**
              * static method to create the object
@@ -1749,15 +1795,15 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
              * Postcondition: If this object is an element, the reader is positioned at its end element
              *                If this object is a complex type, the reader is positioned at the end element of its outer element
              */
-            public static Plant parse(javax.xml.stream.XMLStreamReader reader)
-                throws java.lang.Exception {
+            public static Plant parse(XMLStreamReader reader)
+                throws Exception {
                 Plant object = new Plant();
 
                 int event;
-                javax.xml.namespace.QName currentQName = null;
-                java.lang.String nillableValue = null;
-                java.lang.String prefix = "";
-                java.lang.String namespaceuri = "";
+                QName currentQName = null;
+                String nillableValue = null;
+                String prefix = "";
+                String namespaceuri = "";
 
                 try {
                     while (!reader.isStartElement() && !reader.isEndElement())
@@ -1768,11 +1814,11 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                     if (reader.getAttributeValue(
                                 "http://www.w3.org/2001/XMLSchema-instance",
                                 "type") != null) {
-                        java.lang.String fullTypeName = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
+                        String fullTypeName = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
                                 "type");
 
                         if (fullTypeName != null) {
-                            java.lang.String nsPrefix = null;
+                            String nsPrefix = null;
 
                             if (fullTypeName.indexOf(":") > -1) {
                                 nsPrefix = fullTypeName.substring(0,
@@ -1781,12 +1827,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                             nsPrefix = (nsPrefix == null) ? "" : nsPrefix;
 
-                            java.lang.String type = fullTypeName.substring(fullTypeName.indexOf(
+                            String type = fullTypeName.substring(fullTypeName.indexOf(
                                         ":") + 1);
 
                             if (!"plant".equals(type)) {
                                 //find namespace for the prefix
-                                java.lang.String nsUri = reader.getNamespaceContext()
+                                String nsUri = reader.getNamespaceContext()
                                                                .getNamespaceURI(nsPrefix);
 
                                 return (Plant) ExtensionMapper.getTypeObject(nsUri,
@@ -1797,17 +1843,17 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     // Note all attributes that were handled. Used to differ normal attributes
                     // from anyAttributes.
-                    java.util.Vector handledAttributes = new java.util.Vector();
+                    Vector handledAttributes = new Vector();
 
                     reader.next();
 
-                    java.util.ArrayList list5 = new java.util.ArrayList();
+                    ArrayList list5 = new ArrayList();
 
                     while (!reader.isStartElement() && !reader.isEndElement())
                         reader.next();
 
                     if (reader.isStartElement() &&
-                            new javax.xml.namespace.QName("", "currentStatus").equals(
+                            new QName("", "currentStatus").equals(
                                 reader.getName())) {
                         object.setCurrentStatus(PlantStatus.Factory.parse(
                                 reader));
@@ -1822,21 +1868,21 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                         reader.next();
 
                     if (reader.isStartElement() &&
-                            new javax.xml.namespace.QName("", "description").equals(
+                            new QName("", "description").equals(
                                 reader.getName())) {
                         nillableValue = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
                                 "nil");
 
                         if ("true".equals(nillableValue) ||
                                 "1".equals(nillableValue)) {
-                            throw new org.apache.axis2.databinding.ADBException(
+                            throw new ADBException(
                                 "The element: " + "description" +
                                 "  cannot be null");
                         }
 
-                        java.lang.String content = reader.getElementText();
+                        String content = reader.getElementText();
 
-                        object.setDescription(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        object.setDescription(ConverterUtil.convertToString(
                                 content));
 
                         reader.next();
@@ -1849,20 +1895,20 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                         reader.next();
 
                     if (reader.isStartElement() &&
-                            new javax.xml.namespace.QName("", "id").equals(
+                            new QName("", "id").equals(
                                 reader.getName())) {
                         nillableValue = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
                                 "nil");
 
                         if ("true".equals(nillableValue) ||
                                 "1".equals(nillableValue)) {
-                            throw new org.apache.axis2.databinding.ADBException(
+                            throw new ADBException(
                                 "The element: " + "id" + "  cannot be null");
                         }
 
-                        java.lang.String content = reader.getElementText();
+                        String content = reader.getElementText();
 
-                        object.setId(org.apache.axis2.databinding.utils.ConverterUtil.convertToLong(
+                        object.setId(ConverterUtil.convertToLong(
                                 content));
 
                         reader.next();
@@ -1870,7 +1916,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     else {
                         // 1 - A start element we are not expecting indicates an invalid parameter was passed
-                        throw new org.apache.axis2.databinding.ADBException(
+                        throw new ADBException(
                             "Unexpected subelement " + reader.getName());
                     }
 
@@ -1878,20 +1924,20 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                         reader.next();
 
                     if (reader.isStartElement() &&
-                            new javax.xml.namespace.QName("", "name").equals(
+                            new QName("", "name").equals(
                                 reader.getName())) {
                         nillableValue = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
                                 "nil");
 
                         if ("true".equals(nillableValue) ||
                                 "1".equals(nillableValue)) {
-                            throw new org.apache.axis2.databinding.ADBException(
+                            throw new ADBException(
                                 "The element: " + "name" + "  cannot be null");
                         }
 
-                        java.lang.String content = reader.getElementText();
+                        String content = reader.getElementText();
 
-                        object.setName(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        object.setName(ConverterUtil.convertToString(
                                 content));
 
                         reader.next();
@@ -1904,7 +1950,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                         reader.next();
 
                     if (reader.isStartElement() &&
-                            new javax.xml.namespace.QName("", "pos").equals(
+                            new QName("", "pos").equals(
                                 reader.getName())) {
                         // Process the array and step past its final element's end.
                         nillableValue = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
@@ -1938,7 +1984,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                                 //two continuous end elements means we are exiting the xml structure
                                 loopDone5 = true;
                             } else {
-                                if (new javax.xml.namespace.QName("", "pos").equals(
+                                if (new QName("", "pos").equals(
                                             reader.getName())) {
                                     nillableValue = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
                                             "nil");
@@ -1958,7 +2004,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                         }
 
                         // call the converter utility  to convert and set the array
-                        object.setPos((PurchaseOrder[]) org.apache.axis2.databinding.utils.ConverterUtil.convertToArray(
+                        object.setPos((PurchaseOrder[]) ConverterUtil.convertToArray(
                                 PurchaseOrder.class, list5));
                     } // End of if for expected property start element
 
@@ -1969,20 +2015,20 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                         reader.next();
 
                     if (reader.isStartElement() &&
-                            new javax.xml.namespace.QName("", "price").equals(
+                            new QName("", "price").equals(
                                 reader.getName())) {
                         nillableValue = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
                                 "nil");
 
                         if ("true".equals(nillableValue) ||
                                 "1".equals(nillableValue)) {
-                            throw new org.apache.axis2.databinding.ADBException(
+                            throw new ADBException(
                                 "The element: " + "price" + "  cannot be null");
                         }
 
-                        java.lang.String content = reader.getElementText();
+                        String content = reader.getElementText();
 
-                        object.setPrice(org.apache.axis2.databinding.utils.ConverterUtil.convertToDouble(
+                        object.setPrice(ConverterUtil.convertToDouble(
                                 content));
 
                         reader.next();
@@ -1990,7 +2036,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     else {
                         // 1 - A start element we are not expecting indicates an invalid parameter was passed
-                        throw new org.apache.axis2.databinding.ADBException(
+                        throw new ADBException(
                             "Unexpected subelement " + reader.getName());
                     }
 
@@ -1999,11 +2045,11 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     if (reader.isStartElement()) {
                         // 2 - A start element we are not expecting indicates a trailing invalid property
-                        throw new org.apache.axis2.databinding.ADBException(
+                        throw new ADBException(
                             "Unexpected subelement " + reader.getName());
                     }
-                } catch (javax.xml.stream.XMLStreamException e) {
-                    throw new java.lang.Exception(e);
+                } catch (XMLStreamException e) {
+                    throw new Exception(e);
                 }
 
                 return object;
@@ -2011,8 +2057,8 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         } //end of factory class
     }
 
-    public static class GetPlantByIDE implements org.apache.axis2.databinding.ADBBean {
-        public static final javax.xml.namespace.QName MY_QNAME = new javax.xml.namespace.QName("http://webservice.rentit.pkg.az/",
+    public static class GetPlantByIDE implements ADBBean {
+        public static final QName MY_QNAME = new QName("http://webservice.rentit.pkg.az/",
                 "getPlantByID", "ns1");
 
         /**
@@ -2042,51 +2088,51 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          * @param factory
          * @return org.apache.axiom.om.OMElement
          */
-        public org.apache.axiom.om.OMElement getOMElement(
-            final javax.xml.namespace.QName parentQName,
-            final org.apache.axiom.om.OMFactory factory)
-            throws org.apache.axis2.databinding.ADBException {
-            return factory.createOMElement(new org.apache.axis2.databinding.ADBDataSource(
+        public OMElement getOMElement(
+            final QName parentQName,
+            final OMFactory factory)
+            throws ADBException {
+            return factory.createOMElement(new ADBDataSource(
                     this, MY_QNAME));
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException,
+                ADBException {
             serialize(parentQName, xmlWriter, false);
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter, boolean serializeType)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter, boolean serializeType)
+            throws XMLStreamException,
+                ADBException {
             //We can safely assume an element has only one type associated with it
             if (localGetPlantByID == null) {
-                throw new org.apache.axis2.databinding.ADBException(
+                throw new ADBException(
                     "getPlantByID cannot be null!");
             }
 
             localGetPlantByID.serialize(MY_QNAME, xmlWriter);
         }
 
-        private static java.lang.String generatePrefix(
-            java.lang.String namespace) {
+        private static String generatePrefix(
+            String namespace) {
             if (namespace.equals("http://webservice.rentit.pkg.az/")) {
                 return "ns1";
             }
 
-            return org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+            return BeanUtil.getUniquePrefix();
         }
 
         /**
          * Utility method to write an element start tag.
          */
-        private void writeStartElement(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String localPart,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeStartElement(String prefix,
+            String namespace, String localPart,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeStartElement(writerPrefix, localPart, namespace);
@@ -2106,12 +2152,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute with the ns prefix
          */
-        private void writeAttribute(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String attName,
-            java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeAttribute(String prefix,
+            String namespace, String attName,
+            String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeAttribute(writerPrefix, namespace, attName,
@@ -2126,10 +2172,10 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeAttribute(java.lang.String namespace,
-            java.lang.String attName, java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeAttribute(String namespace,
+            String attName, String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (namespace.equals("")) {
                 xmlWriter.writeAttribute(attName, attValue);
             } else {
@@ -2141,18 +2187,18 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeQNameAttribute(java.lang.String namespace,
-            java.lang.String attName, javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String attributeNamespace = qname.getNamespaceURI();
-            java.lang.String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
+        private void writeQNameAttribute(String namespace,
+            String attName, QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String attributeNamespace = qname.getNamespaceURI();
+            String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
 
             if (attributePrefix == null) {
                 attributePrefix = registerPrefix(xmlWriter, attributeNamespace);
             }
 
-            java.lang.String attributeValue;
+            String attributeValue;
 
             if (attributePrefix.trim().length() > 0) {
                 attributeValue = attributePrefix + ":" + qname.getLocalPart();
@@ -2172,13 +2218,13 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          *  method to handle Qnames
          */
-        private void writeQName(javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String namespaceURI = qname.getNamespaceURI();
+        private void writeQName(QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String namespaceURI = qname.getNamespaceURI();
 
             if (namespaceURI != null) {
-                java.lang.String prefix = xmlWriter.getPrefix(namespaceURI);
+                String prefix = xmlWriter.getPrefix(namespaceURI);
 
                 if (prefix == null) {
                     prefix = generatePrefix(namespaceURI);
@@ -2188,28 +2234,28 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                 if (prefix.trim().length() > 0) {
                     xmlWriter.writeCharacters(prefix + ":" +
-                        org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        ConverterUtil.convertToString(
                             qname));
                 } else {
                     // i.e this is the default namespace
-                    xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                    xmlWriter.writeCharacters(ConverterUtil.convertToString(
                             qname));
                 }
             } else {
-                xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                xmlWriter.writeCharacters(ConverterUtil.convertToString(
                         qname));
             }
         }
 
-        private void writeQNames(javax.xml.namespace.QName[] qnames,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeQNames(QName[] qnames,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (qnames != null) {
                 // we have to store this data until last moment since it is not possible to write any
                 // namespace data after writing the charactor data
-                java.lang.StringBuffer stringToWrite = new java.lang.StringBuffer();
-                java.lang.String namespaceURI = null;
-                java.lang.String prefix = null;
+                StringBuffer stringToWrite = new StringBuffer();
+                String namespaceURI = null;
+                String prefix = null;
 
                 for (int i = 0; i < qnames.length; i++) {
                     if (i > 0) {
@@ -2229,14 +2275,14 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                         if (prefix.trim().length() > 0) {
                             stringToWrite.append(prefix).append(":")
-                                         .append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                                         .append(ConverterUtil.convertToString(
                                     qnames[i]));
                         } else {
-                            stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                            stringToWrite.append(ConverterUtil.convertToString(
                                     qnames[i]));
                         }
                     } else {
-                        stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        stringToWrite.append(ConverterUtil.convertToString(
                                 qnames[i]));
                     }
                 }
@@ -2248,25 +2294,25 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Register a namespace prefix
          */
-        private java.lang.String registerPrefix(
-            javax.xml.stream.XMLStreamWriter xmlWriter,
-            java.lang.String namespace)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String prefix = xmlWriter.getPrefix(namespace);
+        private String registerPrefix(
+            XMLStreamWriter xmlWriter,
+            String namespace)
+            throws XMLStreamException {
+            String prefix = xmlWriter.getPrefix(namespace);
 
             if (prefix == null) {
                 prefix = generatePrefix(namespace);
 
-                javax.xml.namespace.NamespaceContext nsContext = xmlWriter.getNamespaceContext();
+                NamespaceContext nsContext = xmlWriter.getNamespaceContext();
 
                 while (true) {
-                    java.lang.String uri = nsContext.getNamespaceURI(prefix);
+                    String uri = nsContext.getNamespaceURI(prefix);
 
                     if ((uri == null) || (uri.length() == 0)) {
                         break;
                     }
 
-                    prefix = org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+                    prefix = BeanUtil.getUniquePrefix();
                 }
 
                 xmlWriter.writeNamespace(prefix, namespace);
@@ -2280,7 +2326,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          *  Factory class that keeps the parse method
          */
         public static class Factory {
-            private static org.apache.commons.logging.Log log = org.apache.commons.logging.LogFactory.getLog(Factory.class);
+            private static Log log = LogFactory.getLog(Factory.class);
 
             /**
              * static method to create the object
@@ -2290,15 +2336,15 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
              *                If this object is a complex type, the reader is positioned at the end element of its outer element
              */
             public static GetPlantByIDE parse(
-                javax.xml.stream.XMLStreamReader reader)
-                throws java.lang.Exception {
+                XMLStreamReader reader)
+                throws Exception {
                 GetPlantByIDE object = new GetPlantByIDE();
 
                 int event;
-                javax.xml.namespace.QName currentQName = null;
-                java.lang.String nillableValue = null;
-                java.lang.String prefix = "";
-                java.lang.String namespaceuri = "";
+                QName currentQName = null;
+                String nillableValue = null;
+                String prefix = "";
+                String namespaceuri = "";
 
                 try {
                     while (!reader.isStartElement() && !reader.isEndElement())
@@ -2308,12 +2354,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     // Note all attributes that were handled. Used to differ normal attributes
                     // from anyAttributes.
-                    java.util.Vector handledAttributes = new java.util.Vector();
+                    Vector handledAttributes = new Vector();
 
                     while (!reader.isEndElement()) {
                         if (reader.isStartElement()) {
                             if (reader.isStartElement() &&
-                                    new javax.xml.namespace.QName(
+                                    new QName(
                                         "http://webservice.rentit.pkg.az/",
                                         "getPlantByID").equals(reader.getName())) {
                                 object.setGetPlantByID(GetPlantByID.Factory.parse(
@@ -2322,7 +2368,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                             else {
                                 // 3 - A start element we are not expecting indicates an invalid parameter was passed
-                                throw new org.apache.axis2.databinding.ADBException(
+                                throw new ADBException(
                                     "Unexpected subelement " +
                                     reader.getName());
                             }
@@ -2330,8 +2376,8 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                             reader.next();
                         }
                     } // end of while loop
-                } catch (javax.xml.stream.XMLStreamException e) {
-                    throw new java.lang.Exception(e);
+                } catch (XMLStreamException e) {
+                    throw new Exception(e);
                 }
 
                 return object;
@@ -2339,13 +2385,13 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         } //end of factory class
     }
 
-    public static class PlantStatus implements org.apache.axis2.databinding.ADBBean {
-        public static final javax.xml.namespace.QName MY_QNAME = new javax.xml.namespace.QName("http://webservice.rentit.pkg.az/",
+    public static class PlantStatus implements ADBBean {
+        public static final QName MY_QNAME = new QName("http://webservice.rentit.pkg.az/",
                 "plantStatus", "ns1");
-        private static java.util.HashMap _table_ = new java.util.HashMap();
-        public static final java.lang.String _available = org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+        private static HashMap _table_ = new HashMap();
+        public static final String _available = ConverterUtil.convertToString(
                 "available");
-        public static final java.lang.String _notAvailable = org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+        public static final String _notAvailable = ConverterUtil.convertToString(
                 "notAvailable");
         public static final PlantStatus available = new PlantStatus(_available,
                 true);
@@ -2355,10 +2401,10 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * field for PlantStatus
          */
-        protected java.lang.String localPlantStatus;
+        protected String localPlantStatus;
 
         // Constructor
-        protected PlantStatus(java.lang.String value, boolean isRegisterValue) {
+        protected PlantStatus(String value, boolean isRegisterValue) {
             localPlantStatus = value;
 
             if (isRegisterValue) {
@@ -2366,11 +2412,11 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
             }
         }
 
-        public java.lang.String getValue() {
+        public String getValue() {
             return localPlantStatus;
         }
 
-        public boolean equals(java.lang.Object obj) {
+        public boolean equals(Object obj) {
             return (obj == this);
         }
 
@@ -2378,7 +2424,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
             return toString().hashCode();
         }
 
-        public java.lang.String toString() {
+        public String toString() {
             return localPlantStatus.toString();
         }
 
@@ -2388,34 +2434,34 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          * @param factory
          * @return org.apache.axiom.om.OMElement
          */
-        public org.apache.axiom.om.OMElement getOMElement(
-            final javax.xml.namespace.QName parentQName,
-            final org.apache.axiom.om.OMFactory factory)
-            throws org.apache.axis2.databinding.ADBException {
-            return factory.createOMElement(new org.apache.axis2.databinding.ADBDataSource(
+        public OMElement getOMElement(
+            final QName parentQName,
+            final OMFactory factory)
+            throws ADBException {
+            return factory.createOMElement(new ADBDataSource(
                     this, MY_QNAME));
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException,
+                ADBException {
             serialize(parentQName, xmlWriter, false);
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter, boolean serializeType)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter, boolean serializeType)
+            throws XMLStreamException,
+                ADBException {
             //We can safely assume an element has only one type associated with it
-            java.lang.String namespace = parentQName.getNamespaceURI();
-            java.lang.String _localName = parentQName.getLocalPart();
+            String namespace = parentQName.getNamespaceURI();
+            String _localName = parentQName.getLocalPart();
 
             writeStartElement(null, namespace, _localName, xmlWriter);
 
             // add the type details if this is used in a simple type
             if (serializeType) {
-                java.lang.String namespacePrefix = registerPrefix(xmlWriter,
+                String namespacePrefix = registerPrefix(xmlWriter,
                         "http://webservice.rentit.pkg.az/");
 
                 if ((namespacePrefix != null) &&
@@ -2431,7 +2477,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
             }
 
             if (localPlantStatus == null) {
-                throw new org.apache.axis2.databinding.ADBException(
+                throw new ADBException(
                     "plantStatus cannot be null !!");
             } else {
                 xmlWriter.writeCharacters(localPlantStatus);
@@ -2440,23 +2486,23 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
             xmlWriter.writeEndElement();
         }
 
-        private static java.lang.String generatePrefix(
-            java.lang.String namespace) {
+        private static String generatePrefix(
+            String namespace) {
             if (namespace.equals("http://webservice.rentit.pkg.az/")) {
                 return "ns1";
             }
 
-            return org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+            return BeanUtil.getUniquePrefix();
         }
 
         /**
          * Utility method to write an element start tag.
          */
-        private void writeStartElement(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String localPart,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeStartElement(String prefix,
+            String namespace, String localPart,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeStartElement(writerPrefix, localPart, namespace);
@@ -2476,12 +2522,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute with the ns prefix
          */
-        private void writeAttribute(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String attName,
-            java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeAttribute(String prefix,
+            String namespace, String attName,
+            String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeAttribute(writerPrefix, namespace, attName,
@@ -2496,10 +2542,10 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeAttribute(java.lang.String namespace,
-            java.lang.String attName, java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeAttribute(String namespace,
+            String attName, String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (namespace.equals("")) {
                 xmlWriter.writeAttribute(attName, attValue);
             } else {
@@ -2511,18 +2557,18 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeQNameAttribute(java.lang.String namespace,
-            java.lang.String attName, javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String attributeNamespace = qname.getNamespaceURI();
-            java.lang.String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
+        private void writeQNameAttribute(String namespace,
+            String attName, QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String attributeNamespace = qname.getNamespaceURI();
+            String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
 
             if (attributePrefix == null) {
                 attributePrefix = registerPrefix(xmlWriter, attributeNamespace);
             }
 
-            java.lang.String attributeValue;
+            String attributeValue;
 
             if (attributePrefix.trim().length() > 0) {
                 attributeValue = attributePrefix + ":" + qname.getLocalPart();
@@ -2542,13 +2588,13 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          *  method to handle Qnames
          */
-        private void writeQName(javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String namespaceURI = qname.getNamespaceURI();
+        private void writeQName(QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String namespaceURI = qname.getNamespaceURI();
 
             if (namespaceURI != null) {
-                java.lang.String prefix = xmlWriter.getPrefix(namespaceURI);
+                String prefix = xmlWriter.getPrefix(namespaceURI);
 
                 if (prefix == null) {
                     prefix = generatePrefix(namespaceURI);
@@ -2558,28 +2604,28 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                 if (prefix.trim().length() > 0) {
                     xmlWriter.writeCharacters(prefix + ":" +
-                        org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        ConverterUtil.convertToString(
                             qname));
                 } else {
                     // i.e this is the default namespace
-                    xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                    xmlWriter.writeCharacters(ConverterUtil.convertToString(
                             qname));
                 }
             } else {
-                xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                xmlWriter.writeCharacters(ConverterUtil.convertToString(
                         qname));
             }
         }
 
-        private void writeQNames(javax.xml.namespace.QName[] qnames,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeQNames(QName[] qnames,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (qnames != null) {
                 // we have to store this data until last moment since it is not possible to write any
                 // namespace data after writing the charactor data
-                java.lang.StringBuffer stringToWrite = new java.lang.StringBuffer();
-                java.lang.String namespaceURI = null;
-                java.lang.String prefix = null;
+                StringBuffer stringToWrite = new StringBuffer();
+                String namespaceURI = null;
+                String prefix = null;
 
                 for (int i = 0; i < qnames.length; i++) {
                     if (i > 0) {
@@ -2599,14 +2645,14 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                         if (prefix.trim().length() > 0) {
                             stringToWrite.append(prefix).append(":")
-                                         .append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                                         .append(ConverterUtil.convertToString(
                                     qnames[i]));
                         } else {
-                            stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                            stringToWrite.append(ConverterUtil.convertToString(
                                     qnames[i]));
                         }
                     } else {
-                        stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        stringToWrite.append(ConverterUtil.convertToString(
                                 qnames[i]));
                     }
                 }
@@ -2618,25 +2664,25 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Register a namespace prefix
          */
-        private java.lang.String registerPrefix(
-            javax.xml.stream.XMLStreamWriter xmlWriter,
-            java.lang.String namespace)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String prefix = xmlWriter.getPrefix(namespace);
+        private String registerPrefix(
+            XMLStreamWriter xmlWriter,
+            String namespace)
+            throws XMLStreamException {
+            String prefix = xmlWriter.getPrefix(namespace);
 
             if (prefix == null) {
                 prefix = generatePrefix(namespace);
 
-                javax.xml.namespace.NamespaceContext nsContext = xmlWriter.getNamespaceContext();
+                NamespaceContext nsContext = xmlWriter.getNamespaceContext();
 
                 while (true) {
-                    java.lang.String uri = nsContext.getNamespaceURI(prefix);
+                    String uri = nsContext.getNamespaceURI(prefix);
 
                     if ((uri == null) || (uri.length() == 0)) {
                         break;
                     }
 
-                    prefix = org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+                    prefix = BeanUtil.getUniquePrefix();
                 }
 
                 xmlWriter.writeNamespace(prefix, namespace);
@@ -2650,38 +2696,38 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          *  Factory class that keeps the parse method
          */
         public static class Factory {
-            private static org.apache.commons.logging.Log log = org.apache.commons.logging.LogFactory.getLog(Factory.class);
+            private static Log log = LogFactory.getLog(Factory.class);
 
-            public static PlantStatus fromValue(java.lang.String value)
-                throws java.lang.IllegalArgumentException {
+            public static PlantStatus fromValue(String value)
+                throws IllegalArgumentException {
                 PlantStatus enumeration = (PlantStatus) _table_.get(value);
 
                 // handle unexpected enumeration values properly
                 if (enumeration == null) {
-                    throw new java.lang.IllegalArgumentException();
+                    throw new IllegalArgumentException();
                 }
 
                 return enumeration;
             }
 
-            public static PlantStatus fromString(java.lang.String value,
-                java.lang.String namespaceURI)
-                throws java.lang.IllegalArgumentException {
+            public static PlantStatus fromString(String value,
+                String namespaceURI)
+                throws IllegalArgumentException {
                 try {
-                    return fromValue(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                    return fromValue(ConverterUtil.convertToString(
                             value));
-                } catch (java.lang.Exception e) {
-                    throw new java.lang.IllegalArgumentException();
+                } catch (Exception e) {
+                    throw new IllegalArgumentException();
                 }
             }
 
             public static PlantStatus fromString(
-                javax.xml.stream.XMLStreamReader xmlStreamReader,
-                java.lang.String content) {
+                XMLStreamReader xmlStreamReader,
+                String content) {
                 if (content.indexOf(":") > -1) {
-                    java.lang.String prefix = content.substring(0,
+                    String prefix = content.substring(0,
                             content.indexOf(":"));
-                    java.lang.String namespaceUri = xmlStreamReader.getNamespaceContext()
+                    String namespaceUri = xmlStreamReader.getNamespaceContext()
                                                                    .getNamespaceURI(prefix);
 
                     return PlantStatus.Factory.fromString(content, namespaceUri);
@@ -2698,19 +2744,19 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
              *                If this object is a complex type, the reader is positioned at the end element of its outer element
              */
             public static PlantStatus parse(
-                javax.xml.stream.XMLStreamReader reader)
-                throws java.lang.Exception {
+                XMLStreamReader reader)
+                throws Exception {
                 PlantStatus object = null;
 
                 // initialize a hash map to keep values
-                java.util.Map attributeMap = new java.util.HashMap();
-                java.util.List extraAttributeList = new java.util.ArrayList<org.apache.axiom.om.OMAttribute>();
+                Map attributeMap = new HashMap();
+                List extraAttributeList = new ArrayList<OMAttribute>();
 
                 int event;
-                javax.xml.namespace.QName currentQName = null;
-                java.lang.String nillableValue = null;
-                java.lang.String prefix = "";
-                java.lang.String namespaceuri = "";
+                QName currentQName = null;
+                String nillableValue = null;
+                String prefix = "";
+                String namespaceuri = "";
 
                 try {
                     while (!reader.isStartElement() && !reader.isEndElement())
@@ -2720,7 +2766,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     // Note all attributes that were handled. Used to differ normal attributes
                     // from anyAttributes.
-                    java.util.Vector handledAttributes = new java.util.Vector();
+                    Vector handledAttributes = new Vector();
 
                     while (!reader.isEndElement()) {
                         if (reader.isStartElement() || reader.hasText()) {
@@ -2729,12 +2775,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                             if ("true".equals(nillableValue) ||
                                     "1".equals(nillableValue)) {
-                                throw new org.apache.axis2.databinding.ADBException(
+                                throw new ADBException(
                                     "The element: " + "plantStatus" +
                                     "  cannot be null");
                             }
 
-                            java.lang.String content = reader.getElementText();
+                            String content = reader.getElementText();
 
                             if (content.indexOf(":") > 0) {
                                 // this seems to be a Qname so find the namespace and send
@@ -2753,8 +2799,8 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                             reader.next();
                         }
                     } // end of while loop
-                } catch (javax.xml.stream.XMLStreamException e) {
-                    throw new java.lang.Exception(e);
+                } catch (XMLStreamException e) {
+                    throw new Exception(e);
                 }
 
                 return object;
@@ -2762,15 +2808,15 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         } //end of factory class
     }
 
-    public static class PurchaseOrderStatus implements org.apache.axis2.databinding.ADBBean {
-        public static final javax.xml.namespace.QName MY_QNAME = new javax.xml.namespace.QName("http://webservice.rentit.pkg.az/",
+    public static class PurchaseOrderStatus implements ADBBean {
+        public static final QName MY_QNAME = new QName("http://webservice.rentit.pkg.az/",
                 "purchaseOrderStatus", "ns1");
-        private static java.util.HashMap _table_ = new java.util.HashMap();
-        public static final java.lang.String _accepted = org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+        private static HashMap _table_ = new HashMap();
+        public static final String _accepted = ConverterUtil.convertToString(
                 "accepted");
-        public static final java.lang.String _rejected = org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+        public static final String _rejected = ConverterUtil.convertToString(
                 "rejected");
-        public static final java.lang.String _cancelledByCustomer = org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+        public static final String _cancelledByCustomer = ConverterUtil.convertToString(
                 "cancelledByCustomer");
         public static final PurchaseOrderStatus accepted = new PurchaseOrderStatus(_accepted,
                 true);
@@ -2782,10 +2828,10 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * field for PurchaseOrderStatus
          */
-        protected java.lang.String localPurchaseOrderStatus;
+        protected String localPurchaseOrderStatus;
 
         // Constructor
-        protected PurchaseOrderStatus(java.lang.String value,
+        protected PurchaseOrderStatus(String value,
             boolean isRegisterValue) {
             localPurchaseOrderStatus = value;
 
@@ -2794,11 +2840,11 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
             }
         }
 
-        public java.lang.String getValue() {
+        public String getValue() {
             return localPurchaseOrderStatus;
         }
 
-        public boolean equals(java.lang.Object obj) {
+        public boolean equals(Object obj) {
             return (obj == this);
         }
 
@@ -2806,7 +2852,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
             return toString().hashCode();
         }
 
-        public java.lang.String toString() {
+        public String toString() {
             return localPurchaseOrderStatus.toString();
         }
 
@@ -2816,34 +2862,34 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          * @param factory
          * @return org.apache.axiom.om.OMElement
          */
-        public org.apache.axiom.om.OMElement getOMElement(
-            final javax.xml.namespace.QName parentQName,
-            final org.apache.axiom.om.OMFactory factory)
-            throws org.apache.axis2.databinding.ADBException {
-            return factory.createOMElement(new org.apache.axis2.databinding.ADBDataSource(
+        public OMElement getOMElement(
+            final QName parentQName,
+            final OMFactory factory)
+            throws ADBException {
+            return factory.createOMElement(new ADBDataSource(
                     this, MY_QNAME));
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException,
+                ADBException {
             serialize(parentQName, xmlWriter, false);
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter, boolean serializeType)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter, boolean serializeType)
+            throws XMLStreamException,
+                ADBException {
             //We can safely assume an element has only one type associated with it
-            java.lang.String namespace = parentQName.getNamespaceURI();
-            java.lang.String _localName = parentQName.getLocalPart();
+            String namespace = parentQName.getNamespaceURI();
+            String _localName = parentQName.getLocalPart();
 
             writeStartElement(null, namespace, _localName, xmlWriter);
 
             // add the type details if this is used in a simple type
             if (serializeType) {
-                java.lang.String namespacePrefix = registerPrefix(xmlWriter,
+                String namespacePrefix = registerPrefix(xmlWriter,
                         "http://webservice.rentit.pkg.az/");
 
                 if ((namespacePrefix != null) &&
@@ -2859,7 +2905,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
             }
 
             if (localPurchaseOrderStatus == null) {
-                throw new org.apache.axis2.databinding.ADBException(
+                throw new ADBException(
                     "purchaseOrderStatus cannot be null !!");
             } else {
                 xmlWriter.writeCharacters(localPurchaseOrderStatus);
@@ -2868,23 +2914,23 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
             xmlWriter.writeEndElement();
         }
 
-        private static java.lang.String generatePrefix(
-            java.lang.String namespace) {
+        private static String generatePrefix(
+            String namespace) {
             if (namespace.equals("http://webservice.rentit.pkg.az/")) {
                 return "ns1";
             }
 
-            return org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+            return BeanUtil.getUniquePrefix();
         }
 
         /**
          * Utility method to write an element start tag.
          */
-        private void writeStartElement(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String localPart,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeStartElement(String prefix,
+            String namespace, String localPart,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeStartElement(writerPrefix, localPart, namespace);
@@ -2904,12 +2950,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute with the ns prefix
          */
-        private void writeAttribute(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String attName,
-            java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeAttribute(String prefix,
+            String namespace, String attName,
+            String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeAttribute(writerPrefix, namespace, attName,
@@ -2924,10 +2970,10 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeAttribute(java.lang.String namespace,
-            java.lang.String attName, java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeAttribute(String namespace,
+            String attName, String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (namespace.equals("")) {
                 xmlWriter.writeAttribute(attName, attValue);
             } else {
@@ -2939,18 +2985,18 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeQNameAttribute(java.lang.String namespace,
-            java.lang.String attName, javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String attributeNamespace = qname.getNamespaceURI();
-            java.lang.String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
+        private void writeQNameAttribute(String namespace,
+            String attName, QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String attributeNamespace = qname.getNamespaceURI();
+            String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
 
             if (attributePrefix == null) {
                 attributePrefix = registerPrefix(xmlWriter, attributeNamespace);
             }
 
-            java.lang.String attributeValue;
+            String attributeValue;
 
             if (attributePrefix.trim().length() > 0) {
                 attributeValue = attributePrefix + ":" + qname.getLocalPart();
@@ -2970,13 +3016,13 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          *  method to handle Qnames
          */
-        private void writeQName(javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String namespaceURI = qname.getNamespaceURI();
+        private void writeQName(QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String namespaceURI = qname.getNamespaceURI();
 
             if (namespaceURI != null) {
-                java.lang.String prefix = xmlWriter.getPrefix(namespaceURI);
+                String prefix = xmlWriter.getPrefix(namespaceURI);
 
                 if (prefix == null) {
                     prefix = generatePrefix(namespaceURI);
@@ -2986,28 +3032,28 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                 if (prefix.trim().length() > 0) {
                     xmlWriter.writeCharacters(prefix + ":" +
-                        org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        ConverterUtil.convertToString(
                             qname));
                 } else {
                     // i.e this is the default namespace
-                    xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                    xmlWriter.writeCharacters(ConverterUtil.convertToString(
                             qname));
                 }
             } else {
-                xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                xmlWriter.writeCharacters(ConverterUtil.convertToString(
                         qname));
             }
         }
 
-        private void writeQNames(javax.xml.namespace.QName[] qnames,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeQNames(QName[] qnames,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (qnames != null) {
                 // we have to store this data until last moment since it is not possible to write any
                 // namespace data after writing the charactor data
-                java.lang.StringBuffer stringToWrite = new java.lang.StringBuffer();
-                java.lang.String namespaceURI = null;
-                java.lang.String prefix = null;
+                StringBuffer stringToWrite = new StringBuffer();
+                String namespaceURI = null;
+                String prefix = null;
 
                 for (int i = 0; i < qnames.length; i++) {
                     if (i > 0) {
@@ -3027,14 +3073,14 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                         if (prefix.trim().length() > 0) {
                             stringToWrite.append(prefix).append(":")
-                                         .append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                                         .append(ConverterUtil.convertToString(
                                     qnames[i]));
                         } else {
-                            stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                            stringToWrite.append(ConverterUtil.convertToString(
                                     qnames[i]));
                         }
                     } else {
-                        stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        stringToWrite.append(ConverterUtil.convertToString(
                                 qnames[i]));
                     }
                 }
@@ -3046,25 +3092,25 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Register a namespace prefix
          */
-        private java.lang.String registerPrefix(
-            javax.xml.stream.XMLStreamWriter xmlWriter,
-            java.lang.String namespace)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String prefix = xmlWriter.getPrefix(namespace);
+        private String registerPrefix(
+            XMLStreamWriter xmlWriter,
+            String namespace)
+            throws XMLStreamException {
+            String prefix = xmlWriter.getPrefix(namespace);
 
             if (prefix == null) {
                 prefix = generatePrefix(namespace);
 
-                javax.xml.namespace.NamespaceContext nsContext = xmlWriter.getNamespaceContext();
+                NamespaceContext nsContext = xmlWriter.getNamespaceContext();
 
                 while (true) {
-                    java.lang.String uri = nsContext.getNamespaceURI(prefix);
+                    String uri = nsContext.getNamespaceURI(prefix);
 
                     if ((uri == null) || (uri.length() == 0)) {
                         break;
                     }
 
-                    prefix = org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+                    prefix = BeanUtil.getUniquePrefix();
                 }
 
                 xmlWriter.writeNamespace(prefix, namespace);
@@ -3078,38 +3124,38 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          *  Factory class that keeps the parse method
          */
         public static class Factory {
-            private static org.apache.commons.logging.Log log = org.apache.commons.logging.LogFactory.getLog(Factory.class);
+            private static Log log = LogFactory.getLog(Factory.class);
 
-            public static PurchaseOrderStatus fromValue(java.lang.String value)
-                throws java.lang.IllegalArgumentException {
+            public static PurchaseOrderStatus fromValue(String value)
+                throws IllegalArgumentException {
                 PurchaseOrderStatus enumeration = (PurchaseOrderStatus) _table_.get(value);
 
                 // handle unexpected enumeration values properly
                 if (enumeration == null) {
-                    throw new java.lang.IllegalArgumentException();
+                    throw new IllegalArgumentException();
                 }
 
                 return enumeration;
             }
 
             public static PurchaseOrderStatus fromString(
-                java.lang.String value, java.lang.String namespaceURI)
-                throws java.lang.IllegalArgumentException {
+                String value, String namespaceURI)
+                throws IllegalArgumentException {
                 try {
-                    return fromValue(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                    return fromValue(ConverterUtil.convertToString(
                             value));
-                } catch (java.lang.Exception e) {
-                    throw new java.lang.IllegalArgumentException();
+                } catch (Exception e) {
+                    throw new IllegalArgumentException();
                 }
             }
 
             public static PurchaseOrderStatus fromString(
-                javax.xml.stream.XMLStreamReader xmlStreamReader,
-                java.lang.String content) {
+                XMLStreamReader xmlStreamReader,
+                String content) {
                 if (content.indexOf(":") > -1) {
-                    java.lang.String prefix = content.substring(0,
+                    String prefix = content.substring(0,
                             content.indexOf(":"));
-                    java.lang.String namespaceUri = xmlStreamReader.getNamespaceContext()
+                    String namespaceUri = xmlStreamReader.getNamespaceContext()
                                                                    .getNamespaceURI(prefix);
 
                     return PurchaseOrderStatus.Factory.fromString(content,
@@ -3127,19 +3173,19 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
              *                If this object is a complex type, the reader is positioned at the end element of its outer element
              */
             public static PurchaseOrderStatus parse(
-                javax.xml.stream.XMLStreamReader reader)
-                throws java.lang.Exception {
+                XMLStreamReader reader)
+                throws Exception {
                 PurchaseOrderStatus object = null;
 
                 // initialize a hash map to keep values
-                java.util.Map attributeMap = new java.util.HashMap();
-                java.util.List extraAttributeList = new java.util.ArrayList<org.apache.axiom.om.OMAttribute>();
+                Map attributeMap = new HashMap();
+                List extraAttributeList = new ArrayList<OMAttribute>();
 
                 int event;
-                javax.xml.namespace.QName currentQName = null;
-                java.lang.String nillableValue = null;
-                java.lang.String prefix = "";
-                java.lang.String namespaceuri = "";
+                QName currentQName = null;
+                String nillableValue = null;
+                String prefix = "";
+                String namespaceuri = "";
 
                 try {
                     while (!reader.isStartElement() && !reader.isEndElement())
@@ -3149,7 +3195,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     // Note all attributes that were handled. Used to differ normal attributes
                     // from anyAttributes.
-                    java.util.Vector handledAttributes = new java.util.Vector();
+                    Vector handledAttributes = new Vector();
 
                     while (!reader.isEndElement()) {
                         if (reader.isStartElement() || reader.hasText()) {
@@ -3158,12 +3204,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                             if ("true".equals(nillableValue) ||
                                     "1".equals(nillableValue)) {
-                                throw new org.apache.axis2.databinding.ADBException(
+                                throw new ADBException(
                                     "The element: " + "purchaseOrderStatus" +
                                     "  cannot be null");
                             }
 
-                            java.lang.String content = reader.getElementText();
+                            String content = reader.getElementText();
 
                             if (content.indexOf(":") > 0) {
                                 // this seems to be a Qname so find the namespace and send
@@ -3182,8 +3228,8 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                             reader.next();
                         }
                     } // end of while loop
-                } catch (javax.xml.stream.XMLStreamException e) {
-                    throw new java.lang.Exception(e);
+                } catch (XMLStreamException e) {
+                    throw new Exception(e);
                 }
 
                 return object;
@@ -3191,8 +3237,8 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         } //end of factory class
     }
 
-    public static class ListAllPlantsE implements org.apache.axis2.databinding.ADBBean {
-        public static final javax.xml.namespace.QName MY_QNAME = new javax.xml.namespace.QName("http://webservice.rentit.pkg.az/",
+    public static class ListAllPlantsE implements ADBBean {
+        public static final QName MY_QNAME = new QName("http://webservice.rentit.pkg.az/",
                 "listAllPlants", "ns1");
 
         /**
@@ -3222,51 +3268,51 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          * @param factory
          * @return org.apache.axiom.om.OMElement
          */
-        public org.apache.axiom.om.OMElement getOMElement(
-            final javax.xml.namespace.QName parentQName,
-            final org.apache.axiom.om.OMFactory factory)
-            throws org.apache.axis2.databinding.ADBException {
-            return factory.createOMElement(new org.apache.axis2.databinding.ADBDataSource(
+        public OMElement getOMElement(
+            final QName parentQName,
+            final OMFactory factory)
+            throws ADBException {
+            return factory.createOMElement(new ADBDataSource(
                     this, MY_QNAME));
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException,
+                ADBException {
             serialize(parentQName, xmlWriter, false);
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter, boolean serializeType)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter, boolean serializeType)
+            throws XMLStreamException,
+                ADBException {
             //We can safely assume an element has only one type associated with it
             if (localListAllPlants == null) {
-                throw new org.apache.axis2.databinding.ADBException(
+                throw new ADBException(
                     "listAllPlants cannot be null!");
             }
 
             localListAllPlants.serialize(MY_QNAME, xmlWriter);
         }
 
-        private static java.lang.String generatePrefix(
-            java.lang.String namespace) {
+        private static String generatePrefix(
+            String namespace) {
             if (namespace.equals("http://webservice.rentit.pkg.az/")) {
                 return "ns1";
             }
 
-            return org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+            return BeanUtil.getUniquePrefix();
         }
 
         /**
          * Utility method to write an element start tag.
          */
-        private void writeStartElement(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String localPart,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeStartElement(String prefix,
+            String namespace, String localPart,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeStartElement(writerPrefix, localPart, namespace);
@@ -3286,12 +3332,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute with the ns prefix
          */
-        private void writeAttribute(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String attName,
-            java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeAttribute(String prefix,
+            String namespace, String attName,
+            String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeAttribute(writerPrefix, namespace, attName,
@@ -3306,10 +3352,10 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeAttribute(java.lang.String namespace,
-            java.lang.String attName, java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeAttribute(String namespace,
+            String attName, String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (namespace.equals("")) {
                 xmlWriter.writeAttribute(attName, attValue);
             } else {
@@ -3321,18 +3367,18 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeQNameAttribute(java.lang.String namespace,
-            java.lang.String attName, javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String attributeNamespace = qname.getNamespaceURI();
-            java.lang.String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
+        private void writeQNameAttribute(String namespace,
+            String attName, QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String attributeNamespace = qname.getNamespaceURI();
+            String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
 
             if (attributePrefix == null) {
                 attributePrefix = registerPrefix(xmlWriter, attributeNamespace);
             }
 
-            java.lang.String attributeValue;
+            String attributeValue;
 
             if (attributePrefix.trim().length() > 0) {
                 attributeValue = attributePrefix + ":" + qname.getLocalPart();
@@ -3352,13 +3398,13 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          *  method to handle Qnames
          */
-        private void writeQName(javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String namespaceURI = qname.getNamespaceURI();
+        private void writeQName(QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String namespaceURI = qname.getNamespaceURI();
 
             if (namespaceURI != null) {
-                java.lang.String prefix = xmlWriter.getPrefix(namespaceURI);
+                String prefix = xmlWriter.getPrefix(namespaceURI);
 
                 if (prefix == null) {
                     prefix = generatePrefix(namespaceURI);
@@ -3368,28 +3414,28 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                 if (prefix.trim().length() > 0) {
                     xmlWriter.writeCharacters(prefix + ":" +
-                        org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        ConverterUtil.convertToString(
                             qname));
                 } else {
                     // i.e this is the default namespace
-                    xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                    xmlWriter.writeCharacters(ConverterUtil.convertToString(
                             qname));
                 }
             } else {
-                xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                xmlWriter.writeCharacters(ConverterUtil.convertToString(
                         qname));
             }
         }
 
-        private void writeQNames(javax.xml.namespace.QName[] qnames,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeQNames(QName[] qnames,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (qnames != null) {
                 // we have to store this data until last moment since it is not possible to write any
                 // namespace data after writing the charactor data
-                java.lang.StringBuffer stringToWrite = new java.lang.StringBuffer();
-                java.lang.String namespaceURI = null;
-                java.lang.String prefix = null;
+                StringBuffer stringToWrite = new StringBuffer();
+                String namespaceURI = null;
+                String prefix = null;
 
                 for (int i = 0; i < qnames.length; i++) {
                     if (i > 0) {
@@ -3409,14 +3455,14 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                         if (prefix.trim().length() > 0) {
                             stringToWrite.append(prefix).append(":")
-                                         .append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                                         .append(ConverterUtil.convertToString(
                                     qnames[i]));
                         } else {
-                            stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                            stringToWrite.append(ConverterUtil.convertToString(
                                     qnames[i]));
                         }
                     } else {
-                        stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        stringToWrite.append(ConverterUtil.convertToString(
                                 qnames[i]));
                     }
                 }
@@ -3428,25 +3474,25 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Register a namespace prefix
          */
-        private java.lang.String registerPrefix(
-            javax.xml.stream.XMLStreamWriter xmlWriter,
-            java.lang.String namespace)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String prefix = xmlWriter.getPrefix(namespace);
+        private String registerPrefix(
+            XMLStreamWriter xmlWriter,
+            String namespace)
+            throws XMLStreamException {
+            String prefix = xmlWriter.getPrefix(namespace);
 
             if (prefix == null) {
                 prefix = generatePrefix(namespace);
 
-                javax.xml.namespace.NamespaceContext nsContext = xmlWriter.getNamespaceContext();
+                NamespaceContext nsContext = xmlWriter.getNamespaceContext();
 
                 while (true) {
-                    java.lang.String uri = nsContext.getNamespaceURI(prefix);
+                    String uri = nsContext.getNamespaceURI(prefix);
 
                     if ((uri == null) || (uri.length() == 0)) {
                         break;
                     }
 
-                    prefix = org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+                    prefix = BeanUtil.getUniquePrefix();
                 }
 
                 xmlWriter.writeNamespace(prefix, namespace);
@@ -3460,7 +3506,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          *  Factory class that keeps the parse method
          */
         public static class Factory {
-            private static org.apache.commons.logging.Log log = org.apache.commons.logging.LogFactory.getLog(Factory.class);
+            private static Log log = LogFactory.getLog(Factory.class);
 
             /**
              * static method to create the object
@@ -3470,15 +3516,15 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
              *                If this object is a complex type, the reader is positioned at the end element of its outer element
              */
             public static ListAllPlantsE parse(
-                javax.xml.stream.XMLStreamReader reader)
-                throws java.lang.Exception {
+                XMLStreamReader reader)
+                throws Exception {
                 ListAllPlantsE object = new ListAllPlantsE();
 
                 int event;
-                javax.xml.namespace.QName currentQName = null;
-                java.lang.String nillableValue = null;
-                java.lang.String prefix = "";
-                java.lang.String namespaceuri = "";
+                QName currentQName = null;
+                String nillableValue = null;
+                String prefix = "";
+                String namespaceuri = "";
 
                 try {
                     while (!reader.isStartElement() && !reader.isEndElement())
@@ -3488,12 +3534,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     // Note all attributes that were handled. Used to differ normal attributes
                     // from anyAttributes.
-                    java.util.Vector handledAttributes = new java.util.Vector();
+                    Vector handledAttributes = new Vector();
 
                     while (!reader.isEndElement()) {
                         if (reader.isStartElement()) {
                             if (reader.isStartElement() &&
-                                    new javax.xml.namespace.QName(
+                                    new QName(
                                         "http://webservice.rentit.pkg.az/",
                                         "listAllPlants").equals(
                                         reader.getName())) {
@@ -3503,7 +3549,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                             else {
                                 // 3 - A start element we are not expecting indicates an invalid parameter was passed
-                                throw new org.apache.axis2.databinding.ADBException(
+                                throw new ADBException(
                                     "Unexpected subelement " +
                                     reader.getName());
                             }
@@ -3511,8 +3557,8 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                             reader.next();
                         }
                     } // end of while loop
-                } catch (javax.xml.stream.XMLStreamException e) {
-                    throw new java.lang.Exception(e);
+                } catch (XMLStreamException e) {
+                    throw new Exception(e);
                 }
 
                 return object;
@@ -3521,9 +3567,9 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
     }
 
     public static class ExtensionMapper {
-        public static java.lang.Object getTypeObject(
-            java.lang.String namespaceURI, java.lang.String typeName,
-            javax.xml.stream.XMLStreamReader reader) throws java.lang.Exception {
+        public static Object getTypeObject(
+            String namespaceURI, String typeName,
+            XMLStreamReader reader) throws Exception {
             if ("http://webservice.rentit.pkg.az/".equals(namespaceURI) &&
                     "listAllPlants".equals(typeName)) {
                 return ListAllPlants.Factory.parse(reader);
@@ -3564,13 +3610,13 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                 return GetPlantByIDResponse.Factory.parse(reader);
             }
 
-            throw new org.apache.axis2.databinding.ADBException(
+            throw new ADBException(
                 "Unsupported type " + namespaceURI + " " + typeName);
         }
     }
 
-    public static class ListAllPlantsResponseE implements org.apache.axis2.databinding.ADBBean {
-        public static final javax.xml.namespace.QName MY_QNAME = new javax.xml.namespace.QName("http://webservice.rentit.pkg.az/",
+    public static class ListAllPlantsResponseE implements ADBBean {
+        public static final QName MY_QNAME = new QName("http://webservice.rentit.pkg.az/",
                 "listAllPlantsResponse", "ns1");
 
         /**
@@ -3600,51 +3646,51 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          * @param factory
          * @return org.apache.axiom.om.OMElement
          */
-        public org.apache.axiom.om.OMElement getOMElement(
-            final javax.xml.namespace.QName parentQName,
-            final org.apache.axiom.om.OMFactory factory)
-            throws org.apache.axis2.databinding.ADBException {
-            return factory.createOMElement(new org.apache.axis2.databinding.ADBDataSource(
+        public OMElement getOMElement(
+            final QName parentQName,
+            final OMFactory factory)
+            throws ADBException {
+            return factory.createOMElement(new ADBDataSource(
                     this, MY_QNAME));
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException,
+                ADBException {
             serialize(parentQName, xmlWriter, false);
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter, boolean serializeType)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter, boolean serializeType)
+            throws XMLStreamException,
+                ADBException {
             //We can safely assume an element has only one type associated with it
             if (localListAllPlantsResponse == null) {
-                throw new org.apache.axis2.databinding.ADBException(
+                throw new ADBException(
                     "listAllPlantsResponse cannot be null!");
             }
 
             localListAllPlantsResponse.serialize(MY_QNAME, xmlWriter);
         }
 
-        private static java.lang.String generatePrefix(
-            java.lang.String namespace) {
+        private static String generatePrefix(
+            String namespace) {
             if (namespace.equals("http://webservice.rentit.pkg.az/")) {
                 return "ns1";
             }
 
-            return org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+            return BeanUtil.getUniquePrefix();
         }
 
         /**
          * Utility method to write an element start tag.
          */
-        private void writeStartElement(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String localPart,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeStartElement(String prefix,
+            String namespace, String localPart,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeStartElement(writerPrefix, localPart, namespace);
@@ -3664,12 +3710,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute with the ns prefix
          */
-        private void writeAttribute(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String attName,
-            java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeAttribute(String prefix,
+            String namespace, String attName,
+            String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeAttribute(writerPrefix, namespace, attName,
@@ -3684,10 +3730,10 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeAttribute(java.lang.String namespace,
-            java.lang.String attName, java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeAttribute(String namespace,
+            String attName, String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (namespace.equals("")) {
                 xmlWriter.writeAttribute(attName, attValue);
             } else {
@@ -3699,18 +3745,18 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeQNameAttribute(java.lang.String namespace,
-            java.lang.String attName, javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String attributeNamespace = qname.getNamespaceURI();
-            java.lang.String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
+        private void writeQNameAttribute(String namespace,
+            String attName, QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String attributeNamespace = qname.getNamespaceURI();
+            String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
 
             if (attributePrefix == null) {
                 attributePrefix = registerPrefix(xmlWriter, attributeNamespace);
             }
 
-            java.lang.String attributeValue;
+            String attributeValue;
 
             if (attributePrefix.trim().length() > 0) {
                 attributeValue = attributePrefix + ":" + qname.getLocalPart();
@@ -3730,13 +3776,13 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          *  method to handle Qnames
          */
-        private void writeQName(javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String namespaceURI = qname.getNamespaceURI();
+        private void writeQName(QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String namespaceURI = qname.getNamespaceURI();
 
             if (namespaceURI != null) {
-                java.lang.String prefix = xmlWriter.getPrefix(namespaceURI);
+                String prefix = xmlWriter.getPrefix(namespaceURI);
 
                 if (prefix == null) {
                     prefix = generatePrefix(namespaceURI);
@@ -3746,28 +3792,28 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                 if (prefix.trim().length() > 0) {
                     xmlWriter.writeCharacters(prefix + ":" +
-                        org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        ConverterUtil.convertToString(
                             qname));
                 } else {
                     // i.e this is the default namespace
-                    xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                    xmlWriter.writeCharacters(ConverterUtil.convertToString(
                             qname));
                 }
             } else {
-                xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                xmlWriter.writeCharacters(ConverterUtil.convertToString(
                         qname));
             }
         }
 
-        private void writeQNames(javax.xml.namespace.QName[] qnames,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeQNames(QName[] qnames,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (qnames != null) {
                 // we have to store this data until last moment since it is not possible to write any
                 // namespace data after writing the charactor data
-                java.lang.StringBuffer stringToWrite = new java.lang.StringBuffer();
-                java.lang.String namespaceURI = null;
-                java.lang.String prefix = null;
+                StringBuffer stringToWrite = new StringBuffer();
+                String namespaceURI = null;
+                String prefix = null;
 
                 for (int i = 0; i < qnames.length; i++) {
                     if (i > 0) {
@@ -3787,14 +3833,14 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                         if (prefix.trim().length() > 0) {
                             stringToWrite.append(prefix).append(":")
-                                         .append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                                         .append(ConverterUtil.convertToString(
                                     qnames[i]));
                         } else {
-                            stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                            stringToWrite.append(ConverterUtil.convertToString(
                                     qnames[i]));
                         }
                     } else {
-                        stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        stringToWrite.append(ConverterUtil.convertToString(
                                 qnames[i]));
                     }
                 }
@@ -3806,25 +3852,25 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Register a namespace prefix
          */
-        private java.lang.String registerPrefix(
-            javax.xml.stream.XMLStreamWriter xmlWriter,
-            java.lang.String namespace)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String prefix = xmlWriter.getPrefix(namespace);
+        private String registerPrefix(
+            XMLStreamWriter xmlWriter,
+            String namespace)
+            throws XMLStreamException {
+            String prefix = xmlWriter.getPrefix(namespace);
 
             if (prefix == null) {
                 prefix = generatePrefix(namespace);
 
-                javax.xml.namespace.NamespaceContext nsContext = xmlWriter.getNamespaceContext();
+                NamespaceContext nsContext = xmlWriter.getNamespaceContext();
 
                 while (true) {
-                    java.lang.String uri = nsContext.getNamespaceURI(prefix);
+                    String uri = nsContext.getNamespaceURI(prefix);
 
                     if ((uri == null) || (uri.length() == 0)) {
                         break;
                     }
 
-                    prefix = org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+                    prefix = BeanUtil.getUniquePrefix();
                 }
 
                 xmlWriter.writeNamespace(prefix, namespace);
@@ -3838,7 +3884,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          *  Factory class that keeps the parse method
          */
         public static class Factory {
-            private static org.apache.commons.logging.Log log = org.apache.commons.logging.LogFactory.getLog(Factory.class);
+            private static Log log = LogFactory.getLog(Factory.class);
 
             /**
              * static method to create the object
@@ -3848,15 +3894,15 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
              *                If this object is a complex type, the reader is positioned at the end element of its outer element
              */
             public static ListAllPlantsResponseE parse(
-                javax.xml.stream.XMLStreamReader reader)
-                throws java.lang.Exception {
+                XMLStreamReader reader)
+                throws Exception {
                 ListAllPlantsResponseE object = new ListAllPlantsResponseE();
 
                 int event;
-                javax.xml.namespace.QName currentQName = null;
-                java.lang.String nillableValue = null;
-                java.lang.String prefix = "";
-                java.lang.String namespaceuri = "";
+                QName currentQName = null;
+                String nillableValue = null;
+                String prefix = "";
+                String namespaceuri = "";
 
                 try {
                     while (!reader.isStartElement() && !reader.isEndElement())
@@ -3866,12 +3912,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     // Note all attributes that were handled. Used to differ normal attributes
                     // from anyAttributes.
-                    java.util.Vector handledAttributes = new java.util.Vector();
+                    Vector handledAttributes = new Vector();
 
                     while (!reader.isEndElement()) {
                         if (reader.isStartElement()) {
                             if (reader.isStartElement() &&
-                                    new javax.xml.namespace.QName(
+                                    new QName(
                                         "http://webservice.rentit.pkg.az/",
                                         "listAllPlantsResponse").equals(
                                         reader.getName())) {
@@ -3881,7 +3927,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                             else {
                                 // 3 - A start element we are not expecting indicates an invalid parameter was passed
-                                throw new org.apache.axis2.databinding.ADBException(
+                                throw new ADBException(
                                     "Unexpected subelement " +
                                     reader.getName());
                             }
@@ -3889,8 +3935,8 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                             reader.next();
                         }
                     } // end of while loop
-                } catch (javax.xml.stream.XMLStreamException e) {
-                    throw new java.lang.Exception(e);
+                } catch (XMLStreamException e) {
+                    throw new Exception(e);
                 }
 
                 return object;
@@ -3898,7 +3944,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         } //end of factory class
     }
 
-    public static class PurchaseOrder extends az.pkg.buildit.wsclient.PurchaseOrderWSServiceStub.CreatePurchaseOrderE implements org.apache.axis2.databinding.ADBBean {
+    public static class PurchaseOrder extends PurchaseOrderWSServiceStub.CreatePurchaseOrderE implements ADBBean {
         /* This type was generated from the piece of schema that had
            name = purchaseOrder
            Namespace URI = http://webservice.rentit.pkg.az/
@@ -3908,7 +3954,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * field for Contact
          */
-        protected java.lang.String localContact;
+        protected String localContact;
 
         /*  This tracker boolean wil be used to detect whether the user called the set method
          *   for this attribute. It will be used to determine whether to include this field
@@ -3924,7 +3970,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * field for Endr
          */
-        protected java.util.Calendar localEndr;
+        protected Calendar localEndr;
 
         /*  This tracker boolean wil be used to detect whether the user called the set method
          *   for this attribute. It will be used to determine whether to include this field
@@ -3962,7 +4008,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * field for Start
          */
-        protected java.util.Calendar localStart;
+        protected Calendar localStart;
 
         /*  This tracker boolean wil be used to detect whether the user called the set method
          *   for this attribute. It will be used to determine whether to include this field
@@ -3978,7 +4024,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          * Auto generated getter method
          * @return java.lang.String
          */
-        public java.lang.String getContact() {
+        public String getContact() {
             return localContact;
         }
 
@@ -3986,7 +4032,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          * Auto generated setter method
          * @param param Contact
          */
-        public void setContact(java.lang.String param) {
+        public void setContact(String param) {
             localContactTracker = param != null;
 
             this.localContact = param;
@@ -4016,7 +4062,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          * Auto generated getter method
          * @return java.util.Calendar
          */
-        public java.util.Calendar getEndr() {
+        public Calendar getEndr() {
             return localEndr;
         }
 
@@ -4024,7 +4070,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          * Auto generated setter method
          * @param param Endr
          */
-        public void setEndr(java.util.Calendar param) {
+        public void setEndr(Calendar param) {
             localEndrTracker = param != null;
 
             this.localEndr = param;
@@ -4098,7 +4144,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          * Auto generated getter method
          * @return java.util.Calendar
          */
-        public java.util.Calendar getStart() {
+        public Calendar getStart() {
             return localStart;
         }
 
@@ -4106,7 +4152,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          * Auto generated setter method
          * @param param Start
          */
-        public void setStart(java.util.Calendar param) {
+        public void setStart(Calendar param) {
             localStartTracker = param != null;
 
             this.localStart = param;
@@ -4118,27 +4164,27 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          * @param factory
          * @return org.apache.axiom.om.OMElement
          */
-        public org.apache.axiom.om.OMElement getOMElement(
-            final javax.xml.namespace.QName parentQName,
-            final org.apache.axiom.om.OMFactory factory)
-            throws org.apache.axis2.databinding.ADBException {
-            return factory.createOMElement(new org.apache.axis2.databinding.ADBDataSource(
+        public OMElement getOMElement(
+            final QName parentQName,
+            final OMFactory factory)
+            throws ADBException {
+            return factory.createOMElement(new ADBDataSource(
                     this, parentQName));
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException,
+                ADBException {
             serialize(parentQName, xmlWriter, false);
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter, boolean serializeType)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
-            java.lang.String prefix = null;
-            java.lang.String namespace = null;
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter, boolean serializeType)
+            throws XMLStreamException,
+                ADBException {
+            String prefix = null;
+            String namespace = null;
 
             prefix = parentQName.getPrefix();
             namespace = parentQName.getNamespaceURI();
@@ -4146,7 +4192,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                 xmlWriter);
 
             if (serializeType) {
-                java.lang.String namespacePrefix = registerPrefix(xmlWriter,
+                String namespacePrefix = registerPrefix(xmlWriter,
                         "http://webservice.rentit.pkg.az/");
 
                 if ((namespacePrefix != null) &&
@@ -4167,7 +4213,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                 if (localContact == null) {
                     // write the nil attribute
-                    throw new org.apache.axis2.databinding.ADBException(
+                    throw new ADBException(
                         "contact cannot be null!!");
                 } else {
                     xmlWriter.writeCharacters(localContact);
@@ -4179,11 +4225,11 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
             namespace = "";
             writeStartElement(null, namespace, "cost", xmlWriter);
 
-            if (java.lang.Double.isNaN(localCost)) {
-                throw new org.apache.axis2.databinding.ADBException(
+            if (Double.isNaN(localCost)) {
+                throw new ADBException(
                     "cost cannot be null!!");
             } else {
-                xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                xmlWriter.writeCharacters(ConverterUtil.convertToString(
                         localCost));
             }
 
@@ -4195,10 +4241,10 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                 if (localEndr == null) {
                     // write the nil attribute
-                    throw new org.apache.axis2.databinding.ADBException(
+                    throw new ADBException(
                         "endr cannot be null!!");
                 } else {
-                    xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                    xmlWriter.writeCharacters(ConverterUtil.convertToString(
                             localEndr));
                 }
 
@@ -4208,11 +4254,11 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
             namespace = "";
             writeStartElement(null, namespace, "id", xmlWriter);
 
-            if (localId == java.lang.Long.MIN_VALUE) {
-                throw new org.apache.axis2.databinding.ADBException(
+            if (localId == Long.MIN_VALUE) {
+                throw new ADBException(
                     "id cannot be null!!");
             } else {
-                xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                xmlWriter.writeCharacters(ConverterUtil.convertToString(
                         localId));
             }
 
@@ -4220,21 +4266,21 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
             if (localPlantTracker) {
                 if (localPlant == null) {
-                    throw new org.apache.axis2.databinding.ADBException(
+                    throw new ADBException(
                         "plant cannot be null!!");
                 }
 
-                localPlant.serialize(new javax.xml.namespace.QName("", "plant"),
+                localPlant.serialize(new QName("", "plant"),
                     xmlWriter);
             }
 
             if (localPurchaseOrderStatusTracker) {
                 if (localPurchaseOrderStatus == null) {
-                    throw new org.apache.axis2.databinding.ADBException(
+                    throw new ADBException(
                         "purchaseOrderStatus cannot be null!!");
                 }
 
-                localPurchaseOrderStatus.serialize(new javax.xml.namespace.QName(
+                localPurchaseOrderStatus.serialize(new QName(
                         "", "purchaseOrderStatus"), xmlWriter);
             }
 
@@ -4244,10 +4290,10 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                 if (localStart == null) {
                     // write the nil attribute
-                    throw new org.apache.axis2.databinding.ADBException(
+                    throw new ADBException(
                         "start cannot be null!!");
                 } else {
-                    xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                    xmlWriter.writeCharacters(ConverterUtil.convertToString(
                             localStart));
                 }
 
@@ -4257,23 +4303,23 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
             xmlWriter.writeEndElement();
         }
 
-        private static java.lang.String generatePrefix(
-            java.lang.String namespace) {
+        private static String generatePrefix(
+            String namespace) {
             if (namespace.equals("http://webservice.rentit.pkg.az/")) {
                 return "ns1";
             }
 
-            return org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+            return BeanUtil.getUniquePrefix();
         }
 
         /**
          * Utility method to write an element start tag.
          */
-        private void writeStartElement(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String localPart,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeStartElement(String prefix,
+            String namespace, String localPart,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeStartElement(writerPrefix, localPart, namespace);
@@ -4293,12 +4339,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute with the ns prefix
          */
-        private void writeAttribute(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String attName,
-            java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeAttribute(String prefix,
+            String namespace, String attName,
+            String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeAttribute(writerPrefix, namespace, attName,
@@ -4313,10 +4359,10 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeAttribute(java.lang.String namespace,
-            java.lang.String attName, java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeAttribute(String namespace,
+            String attName, String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (namespace.equals("")) {
                 xmlWriter.writeAttribute(attName, attValue);
             } else {
@@ -4328,18 +4374,18 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeQNameAttribute(java.lang.String namespace,
-            java.lang.String attName, javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String attributeNamespace = qname.getNamespaceURI();
-            java.lang.String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
+        private void writeQNameAttribute(String namespace,
+            String attName, QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String attributeNamespace = qname.getNamespaceURI();
+            String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
 
             if (attributePrefix == null) {
                 attributePrefix = registerPrefix(xmlWriter, attributeNamespace);
             }
 
-            java.lang.String attributeValue;
+            String attributeValue;
 
             if (attributePrefix.trim().length() > 0) {
                 attributeValue = attributePrefix + ":" + qname.getLocalPart();
@@ -4359,13 +4405,13 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          *  method to handle Qnames
          */
-        private void writeQName(javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String namespaceURI = qname.getNamespaceURI();
+        private void writeQName(QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String namespaceURI = qname.getNamespaceURI();
 
             if (namespaceURI != null) {
-                java.lang.String prefix = xmlWriter.getPrefix(namespaceURI);
+                String prefix = xmlWriter.getPrefix(namespaceURI);
 
                 if (prefix == null) {
                     prefix = generatePrefix(namespaceURI);
@@ -4375,28 +4421,28 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                 if (prefix.trim().length() > 0) {
                     xmlWriter.writeCharacters(prefix + ":" +
-                        org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        ConverterUtil.convertToString(
                             qname));
                 } else {
                     // i.e this is the default namespace
-                    xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                    xmlWriter.writeCharacters(ConverterUtil.convertToString(
                             qname));
                 }
             } else {
-                xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                xmlWriter.writeCharacters(ConverterUtil.convertToString(
                         qname));
             }
         }
 
-        private void writeQNames(javax.xml.namespace.QName[] qnames,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeQNames(QName[] qnames,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (qnames != null) {
                 // we have to store this data until last moment since it is not possible to write any
                 // namespace data after writing the charactor data
-                java.lang.StringBuffer stringToWrite = new java.lang.StringBuffer();
-                java.lang.String namespaceURI = null;
-                java.lang.String prefix = null;
+                StringBuffer stringToWrite = new StringBuffer();
+                String namespaceURI = null;
+                String prefix = null;
 
                 for (int i = 0; i < qnames.length; i++) {
                     if (i > 0) {
@@ -4416,14 +4462,14 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                         if (prefix.trim().length() > 0) {
                             stringToWrite.append(prefix).append(":")
-                                         .append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                                         .append(ConverterUtil.convertToString(
                                     qnames[i]));
                         } else {
-                            stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                            stringToWrite.append(ConverterUtil.convertToString(
                                     qnames[i]));
                         }
                     } else {
-                        stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        stringToWrite.append(ConverterUtil.convertToString(
                                 qnames[i]));
                     }
                 }
@@ -4435,25 +4481,25 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Register a namespace prefix
          */
-        private java.lang.String registerPrefix(
-            javax.xml.stream.XMLStreamWriter xmlWriter,
-            java.lang.String namespace)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String prefix = xmlWriter.getPrefix(namespace);
+        private String registerPrefix(
+            XMLStreamWriter xmlWriter,
+            String namespace)
+            throws XMLStreamException {
+            String prefix = xmlWriter.getPrefix(namespace);
 
             if (prefix == null) {
                 prefix = generatePrefix(namespace);
 
-                javax.xml.namespace.NamespaceContext nsContext = xmlWriter.getNamespaceContext();
+                NamespaceContext nsContext = xmlWriter.getNamespaceContext();
 
                 while (true) {
-                    java.lang.String uri = nsContext.getNamespaceURI(prefix);
+                    String uri = nsContext.getNamespaceURI(prefix);
 
                     if ((uri == null) || (uri.length() == 0)) {
                         break;
                     }
 
-                    prefix = org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+                    prefix = BeanUtil.getUniquePrefix();
                 }
 
                 xmlWriter.writeNamespace(prefix, namespace);
@@ -4467,7 +4513,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          *  Factory class that keeps the parse method
          */
         public static class Factory {
-            private static org.apache.commons.logging.Log log = org.apache.commons.logging.LogFactory.getLog(Factory.class);
+            private static Log log = LogFactory.getLog(Factory.class);
 
             /**
              * static method to create the object
@@ -4477,15 +4523,15 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
              *                If this object is a complex type, the reader is positioned at the end element of its outer element
              */
             public static PurchaseOrder parse(
-                javax.xml.stream.XMLStreamReader reader)
-                throws java.lang.Exception {
+                XMLStreamReader reader)
+                throws Exception {
                 PurchaseOrder object = new PurchaseOrder();
 
                 int event;
-                javax.xml.namespace.QName currentQName = null;
-                java.lang.String nillableValue = null;
-                java.lang.String prefix = "";
-                java.lang.String namespaceuri = "";
+                QName currentQName = null;
+                String nillableValue = null;
+                String prefix = "";
+                String namespaceuri = "";
 
                 try {
                     while (!reader.isStartElement() && !reader.isEndElement())
@@ -4496,11 +4542,11 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                     if (reader.getAttributeValue(
                                 "http://www.w3.org/2001/XMLSchema-instance",
                                 "type") != null) {
-                        java.lang.String fullTypeName = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
+                        String fullTypeName = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
                                 "type");
 
                         if (fullTypeName != null) {
-                            java.lang.String nsPrefix = null;
+                            String nsPrefix = null;
 
                             if (fullTypeName.indexOf(":") > -1) {
                                 nsPrefix = fullTypeName.substring(0,
@@ -4509,12 +4555,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                             nsPrefix = (nsPrefix == null) ? "" : nsPrefix;
 
-                            java.lang.String type = fullTypeName.substring(fullTypeName.indexOf(
+                            String type = fullTypeName.substring(fullTypeName.indexOf(
                                         ":") + 1);
 
                             if (!"purchaseOrder".equals(type)) {
                                 //find namespace for the prefix
-                                java.lang.String nsUri = reader.getNamespaceContext()
+                                String nsUri = reader.getNamespaceContext()
                                                                .getNamespaceURI(nsPrefix);
 
                                 return (PurchaseOrder) ExtensionMapper.getTypeObject(nsUri,
@@ -4525,7 +4571,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     // Note all attributes that were handled. Used to differ normal attributes
                     // from anyAttributes.
-                    java.util.Vector handledAttributes = new java.util.Vector();
+                    Vector handledAttributes = new Vector();
 
                     reader.next();
 
@@ -4533,21 +4579,21 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                         reader.next();
 
                     if (reader.isStartElement() &&
-                            new javax.xml.namespace.QName("", "contact").equals(
+                            new QName("", "contact").equals(
                                 reader.getName())) {
                         nillableValue = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
                                 "nil");
 
                         if ("true".equals(nillableValue) ||
                                 "1".equals(nillableValue)) {
-                            throw new org.apache.axis2.databinding.ADBException(
+                            throw new ADBException(
                                 "The element: " + "contact" +
                                 "  cannot be null");
                         }
 
-                        java.lang.String content = reader.getElementText();
+                        String content = reader.getElementText();
 
-                        object.setContact(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        object.setContact(ConverterUtil.convertToString(
                                 content));
 
                         reader.next();
@@ -4560,20 +4606,20 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                         reader.next();
 
                     if (reader.isStartElement() &&
-                            new javax.xml.namespace.QName("", "cost").equals(
+                            new QName("", "cost").equals(
                                 reader.getName())) {
                         nillableValue = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
                                 "nil");
 
                         if ("true".equals(nillableValue) ||
                                 "1".equals(nillableValue)) {
-                            throw new org.apache.axis2.databinding.ADBException(
+                            throw new ADBException(
                                 "The element: " + "cost" + "  cannot be null");
                         }
 
-                        java.lang.String content = reader.getElementText();
+                        String content = reader.getElementText();
 
-                        object.setCost(org.apache.axis2.databinding.utils.ConverterUtil.convertToDouble(
+                        object.setCost(ConverterUtil.convertToDouble(
                                 content));
 
                         reader.next();
@@ -4581,7 +4627,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     else {
                         // 1 - A start element we are not expecting indicates an invalid parameter was passed
-                        throw new org.apache.axis2.databinding.ADBException(
+                        throw new ADBException(
                             "Unexpected subelement " + reader.getName());
                     }
 
@@ -4589,20 +4635,20 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                         reader.next();
 
                     if (reader.isStartElement() &&
-                            new javax.xml.namespace.QName("", "endr").equals(
+                            new QName("", "endr").equals(
                                 reader.getName())) {
                         nillableValue = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
                                 "nil");
 
                         if ("true".equals(nillableValue) ||
                                 "1".equals(nillableValue)) {
-                            throw new org.apache.axis2.databinding.ADBException(
+                            throw new ADBException(
                                 "The element: " + "endr" + "  cannot be null");
                         }
 
-                        java.lang.String content = reader.getElementText();
+                        String content = reader.getElementText();
 
-                        object.setEndr(org.apache.axis2.databinding.utils.ConverterUtil.convertToDateTime(
+                        object.setEndr(ConverterUtil.convertToDateTime(
                                 content));
 
                         reader.next();
@@ -4615,20 +4661,20 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                         reader.next();
 
                     if (reader.isStartElement() &&
-                            new javax.xml.namespace.QName("", "id").equals(
+                            new QName("", "id").equals(
                                 reader.getName())) {
                         nillableValue = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
                                 "nil");
 
                         if ("true".equals(nillableValue) ||
                                 "1".equals(nillableValue)) {
-                            throw new org.apache.axis2.databinding.ADBException(
+                            throw new ADBException(
                                 "The element: " + "id" + "  cannot be null");
                         }
 
-                        java.lang.String content = reader.getElementText();
+                        String content = reader.getElementText();
 
-                        object.setId(org.apache.axis2.databinding.utils.ConverterUtil.convertToLong(
+                        object.setId(ConverterUtil.convertToLong(
                                 content));
 
                         reader.next();
@@ -4636,7 +4682,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     else {
                         // 1 - A start element we are not expecting indicates an invalid parameter was passed
-                        throw new org.apache.axis2.databinding.ADBException(
+                        throw new ADBException(
                             "Unexpected subelement " + reader.getName());
                     }
 
@@ -4644,7 +4690,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                         reader.next();
 
                     if (reader.isStartElement() &&
-                            new javax.xml.namespace.QName("", "plant").equals(
+                            new QName("", "plant").equals(
                                 reader.getName())) {
                         object.setPlant(Plant.Factory.parse(reader));
 
@@ -4658,7 +4704,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                         reader.next();
 
                     if (reader.isStartElement() &&
-                            new javax.xml.namespace.QName("",
+                            new QName("",
                                 "purchaseOrderStatus").equals(reader.getName())) {
                         object.setPurchaseOrderStatus(PurchaseOrderStatus.Factory.parse(
                                 reader));
@@ -4673,20 +4719,20 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                         reader.next();
 
                     if (reader.isStartElement() &&
-                            new javax.xml.namespace.QName("", "start").equals(
+                            new QName("", "start").equals(
                                 reader.getName())) {
                         nillableValue = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
                                 "nil");
 
                         if ("true".equals(nillableValue) ||
                                 "1".equals(nillableValue)) {
-                            throw new org.apache.axis2.databinding.ADBException(
+                            throw new ADBException(
                                 "The element: " + "start" + "  cannot be null");
                         }
 
-                        java.lang.String content = reader.getElementText();
+                        String content = reader.getElementText();
 
-                        object.setStart(org.apache.axis2.databinding.utils.ConverterUtil.convertToDateTime(
+                        object.setStart(ConverterUtil.convertToDateTime(
                                 content));
 
                         reader.next();
@@ -4700,11 +4746,11 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     if (reader.isStartElement()) {
                         // 2 - A start element we are not expecting indicates a trailing invalid property
-                        throw new org.apache.axis2.databinding.ADBException(
+                        throw new ADBException(
                             "Unexpected subelement " + reader.getName());
                     }
-                } catch (javax.xml.stream.XMLStreamException e) {
-                    throw new java.lang.Exception(e);
+                } catch (XMLStreamException e) {
+                    throw new Exception(e);
                 }
 
                 return object;
@@ -4712,7 +4758,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         } //end of factory class
     }
 
-    public static class GetPlantByID implements org.apache.axis2.databinding.ADBBean {
+    public static class GetPlantByID implements ADBBean {
         /* This type was generated from the piece of schema that had
            name = getPlantByID
            Namespace URI = http://webservice.rentit.pkg.az/
@@ -4746,27 +4792,27 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          * @param factory
          * @return org.apache.axiom.om.OMElement
          */
-        public org.apache.axiom.om.OMElement getOMElement(
-            final javax.xml.namespace.QName parentQName,
-            final org.apache.axiom.om.OMFactory factory)
-            throws org.apache.axis2.databinding.ADBException {
-            return factory.createOMElement(new org.apache.axis2.databinding.ADBDataSource(
+        public OMElement getOMElement(
+            final QName parentQName,
+            final OMFactory factory)
+            throws ADBException {
+            return factory.createOMElement(new ADBDataSource(
                     this, parentQName));
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException,
+                ADBException {
             serialize(parentQName, xmlWriter, false);
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter, boolean serializeType)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
-            java.lang.String prefix = null;
-            java.lang.String namespace = null;
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter, boolean serializeType)
+            throws XMLStreamException,
+                ADBException {
+            String prefix = null;
+            String namespace = null;
 
             prefix = parentQName.getPrefix();
             namespace = parentQName.getNamespaceURI();
@@ -4774,7 +4820,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                 xmlWriter);
 
             if (serializeType) {
-                java.lang.String namespacePrefix = registerPrefix(xmlWriter,
+                String namespacePrefix = registerPrefix(xmlWriter,
                         "http://webservice.rentit.pkg.az/");
 
                 if ((namespacePrefix != null) &&
@@ -4792,11 +4838,11 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
             namespace = "";
             writeStartElement(null, namespace, "arg0", xmlWriter);
 
-            if (localArg0 == java.lang.Long.MIN_VALUE) {
-                throw new org.apache.axis2.databinding.ADBException(
+            if (localArg0 == Long.MIN_VALUE) {
+                throw new ADBException(
                     "arg0 cannot be null!!");
             } else {
-                xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                xmlWriter.writeCharacters(ConverterUtil.convertToString(
                         localArg0));
             }
 
@@ -4805,23 +4851,23 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
             xmlWriter.writeEndElement();
         }
 
-        private static java.lang.String generatePrefix(
-            java.lang.String namespace) {
+        private static String generatePrefix(
+            String namespace) {
             if (namespace.equals("http://webservice.rentit.pkg.az/")) {
                 return "ns1";
             }
 
-            return org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+            return BeanUtil.getUniquePrefix();
         }
 
         /**
          * Utility method to write an element start tag.
          */
-        private void writeStartElement(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String localPart,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeStartElement(String prefix,
+            String namespace, String localPart,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeStartElement(writerPrefix, localPart, namespace);
@@ -4841,12 +4887,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute with the ns prefix
          */
-        private void writeAttribute(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String attName,
-            java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeAttribute(String prefix,
+            String namespace, String attName,
+            String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeAttribute(writerPrefix, namespace, attName,
@@ -4861,10 +4907,10 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeAttribute(java.lang.String namespace,
-            java.lang.String attName, java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeAttribute(String namespace,
+            String attName, String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (namespace.equals("")) {
                 xmlWriter.writeAttribute(attName, attValue);
             } else {
@@ -4876,18 +4922,18 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeQNameAttribute(java.lang.String namespace,
-            java.lang.String attName, javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String attributeNamespace = qname.getNamespaceURI();
-            java.lang.String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
+        private void writeQNameAttribute(String namespace,
+            String attName, QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String attributeNamespace = qname.getNamespaceURI();
+            String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
 
             if (attributePrefix == null) {
                 attributePrefix = registerPrefix(xmlWriter, attributeNamespace);
             }
 
-            java.lang.String attributeValue;
+            String attributeValue;
 
             if (attributePrefix.trim().length() > 0) {
                 attributeValue = attributePrefix + ":" + qname.getLocalPart();
@@ -4907,13 +4953,13 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          *  method to handle Qnames
          */
-        private void writeQName(javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String namespaceURI = qname.getNamespaceURI();
+        private void writeQName(QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String namespaceURI = qname.getNamespaceURI();
 
             if (namespaceURI != null) {
-                java.lang.String prefix = xmlWriter.getPrefix(namespaceURI);
+                String prefix = xmlWriter.getPrefix(namespaceURI);
 
                 if (prefix == null) {
                     prefix = generatePrefix(namespaceURI);
@@ -4923,28 +4969,28 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                 if (prefix.trim().length() > 0) {
                     xmlWriter.writeCharacters(prefix + ":" +
-                        org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        ConverterUtil.convertToString(
                             qname));
                 } else {
                     // i.e this is the default namespace
-                    xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                    xmlWriter.writeCharacters(ConverterUtil.convertToString(
                             qname));
                 }
             } else {
-                xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                xmlWriter.writeCharacters(ConverterUtil.convertToString(
                         qname));
             }
         }
 
-        private void writeQNames(javax.xml.namespace.QName[] qnames,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeQNames(QName[] qnames,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (qnames != null) {
                 // we have to store this data until last moment since it is not possible to write any
                 // namespace data after writing the charactor data
-                java.lang.StringBuffer stringToWrite = new java.lang.StringBuffer();
-                java.lang.String namespaceURI = null;
-                java.lang.String prefix = null;
+                StringBuffer stringToWrite = new StringBuffer();
+                String namespaceURI = null;
+                String prefix = null;
 
                 for (int i = 0; i < qnames.length; i++) {
                     if (i > 0) {
@@ -4964,14 +5010,14 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                         if (prefix.trim().length() > 0) {
                             stringToWrite.append(prefix).append(":")
-                                         .append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                                         .append(ConverterUtil.convertToString(
                                     qnames[i]));
                         } else {
-                            stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                            stringToWrite.append(ConverterUtil.convertToString(
                                     qnames[i]));
                         }
                     } else {
-                        stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        stringToWrite.append(ConverterUtil.convertToString(
                                 qnames[i]));
                     }
                 }
@@ -4983,25 +5029,25 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Register a namespace prefix
          */
-        private java.lang.String registerPrefix(
-            javax.xml.stream.XMLStreamWriter xmlWriter,
-            java.lang.String namespace)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String prefix = xmlWriter.getPrefix(namespace);
+        private String registerPrefix(
+            XMLStreamWriter xmlWriter,
+            String namespace)
+            throws XMLStreamException {
+            String prefix = xmlWriter.getPrefix(namespace);
 
             if (prefix == null) {
                 prefix = generatePrefix(namespace);
 
-                javax.xml.namespace.NamespaceContext nsContext = xmlWriter.getNamespaceContext();
+                NamespaceContext nsContext = xmlWriter.getNamespaceContext();
 
                 while (true) {
-                    java.lang.String uri = nsContext.getNamespaceURI(prefix);
+                    String uri = nsContext.getNamespaceURI(prefix);
 
                     if ((uri == null) || (uri.length() == 0)) {
                         break;
                     }
 
-                    prefix = org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+                    prefix = BeanUtil.getUniquePrefix();
                 }
 
                 xmlWriter.writeNamespace(prefix, namespace);
@@ -5015,7 +5061,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          *  Factory class that keeps the parse method
          */
         public static class Factory {
-            private static org.apache.commons.logging.Log log = org.apache.commons.logging.LogFactory.getLog(Factory.class);
+            private static Log log = LogFactory.getLog(Factory.class);
 
             /**
              * static method to create the object
@@ -5025,15 +5071,15 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
              *                If this object is a complex type, the reader is positioned at the end element of its outer element
              */
             public static GetPlantByID parse(
-                javax.xml.stream.XMLStreamReader reader)
-                throws java.lang.Exception {
+                XMLStreamReader reader)
+                throws Exception {
                 GetPlantByID object = new GetPlantByID();
 
                 int event;
-                javax.xml.namespace.QName currentQName = null;
-                java.lang.String nillableValue = null;
-                java.lang.String prefix = "";
-                java.lang.String namespaceuri = "";
+                QName currentQName = null;
+                String nillableValue = null;
+                String prefix = "";
+                String namespaceuri = "";
 
                 try {
                     while (!reader.isStartElement() && !reader.isEndElement())
@@ -5044,11 +5090,11 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                     if (reader.getAttributeValue(
                                 "http://www.w3.org/2001/XMLSchema-instance",
                                 "type") != null) {
-                        java.lang.String fullTypeName = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
+                        String fullTypeName = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
                                 "type");
 
                         if (fullTypeName != null) {
-                            java.lang.String nsPrefix = null;
+                            String nsPrefix = null;
 
                             if (fullTypeName.indexOf(":") > -1) {
                                 nsPrefix = fullTypeName.substring(0,
@@ -5057,12 +5103,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                             nsPrefix = (nsPrefix == null) ? "" : nsPrefix;
 
-                            java.lang.String type = fullTypeName.substring(fullTypeName.indexOf(
+                            String type = fullTypeName.substring(fullTypeName.indexOf(
                                         ":") + 1);
 
                             if (!"getPlantByID".equals(type)) {
                                 //find namespace for the prefix
-                                java.lang.String nsUri = reader.getNamespaceContext()
+                                String nsUri = reader.getNamespaceContext()
                                                                .getNamespaceURI(nsPrefix);
 
                                 return (GetPlantByID) ExtensionMapper.getTypeObject(nsUri,
@@ -5073,7 +5119,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     // Note all attributes that were handled. Used to differ normal attributes
                     // from anyAttributes.
-                    java.util.Vector handledAttributes = new java.util.Vector();
+                    Vector handledAttributes = new Vector();
 
                     reader.next();
 
@@ -5081,20 +5127,20 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                         reader.next();
 
                     if (reader.isStartElement() &&
-                            new javax.xml.namespace.QName("", "arg0").equals(
+                            new QName("", "arg0").equals(
                                 reader.getName())) {
                         nillableValue = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
                                 "nil");
 
                         if ("true".equals(nillableValue) ||
                                 "1".equals(nillableValue)) {
-                            throw new org.apache.axis2.databinding.ADBException(
+                            throw new ADBException(
                                 "The element: " + "arg0" + "  cannot be null");
                         }
 
-                        java.lang.String content = reader.getElementText();
+                        String content = reader.getElementText();
 
-                        object.setArg0(org.apache.axis2.databinding.utils.ConverterUtil.convertToLong(
+                        object.setArg0(ConverterUtil.convertToLong(
                                 content));
 
                         reader.next();
@@ -5102,7 +5148,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     else {
                         // 1 - A start element we are not expecting indicates an invalid parameter was passed
-                        throw new org.apache.axis2.databinding.ADBException(
+                        throw new ADBException(
                             "Unexpected subelement " + reader.getName());
                     }
 
@@ -5111,11 +5157,11 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     if (reader.isStartElement()) {
                         // 2 - A start element we are not expecting indicates a trailing invalid property
-                        throw new org.apache.axis2.databinding.ADBException(
+                        throw new ADBException(
                             "Unexpected subelement " + reader.getName());
                     }
-                } catch (javax.xml.stream.XMLStreamException e) {
-                    throw new java.lang.Exception(e);
+                } catch (XMLStreamException e) {
+                    throw new Exception(e);
                 }
 
                 return object;
@@ -5123,7 +5169,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         } //end of factory class
     }
 
-    public static class ListAllPlants implements org.apache.axis2.databinding.ADBBean {
+    public static class ListAllPlants implements ADBBean {
         /* This type was generated from the piece of schema that had
            name = listAllPlants
            Namespace URI = http://webservice.rentit.pkg.az/
@@ -5136,27 +5182,27 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          * @param factory
          * @return org.apache.axiom.om.OMElement
          */
-        public org.apache.axiom.om.OMElement getOMElement(
-            final javax.xml.namespace.QName parentQName,
-            final org.apache.axiom.om.OMFactory factory)
-            throws org.apache.axis2.databinding.ADBException {
-            return factory.createOMElement(new org.apache.axis2.databinding.ADBDataSource(
+        public OMElement getOMElement(
+            final QName parentQName,
+            final OMFactory factory)
+            throws ADBException {
+            return factory.createOMElement(new ADBDataSource(
                     this, parentQName));
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException,
+                ADBException {
             serialize(parentQName, xmlWriter, false);
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter, boolean serializeType)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
-            java.lang.String prefix = null;
-            java.lang.String namespace = null;
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter, boolean serializeType)
+            throws XMLStreamException,
+                ADBException {
+            String prefix = null;
+            String namespace = null;
 
             prefix = parentQName.getPrefix();
             namespace = parentQName.getNamespaceURI();
@@ -5164,7 +5210,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                 xmlWriter);
 
             if (serializeType) {
-                java.lang.String namespacePrefix = registerPrefix(xmlWriter,
+                String namespacePrefix = registerPrefix(xmlWriter,
                         "http://webservice.rentit.pkg.az/");
 
                 if ((namespacePrefix != null) &&
@@ -5182,23 +5228,23 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
             xmlWriter.writeEndElement();
         }
 
-        private static java.lang.String generatePrefix(
-            java.lang.String namespace) {
+        private static String generatePrefix(
+            String namespace) {
             if (namespace.equals("http://webservice.rentit.pkg.az/")) {
                 return "ns1";
             }
 
-            return org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+            return BeanUtil.getUniquePrefix();
         }
 
         /**
          * Utility method to write an element start tag.
          */
-        private void writeStartElement(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String localPart,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeStartElement(String prefix,
+            String namespace, String localPart,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeStartElement(writerPrefix, localPart, namespace);
@@ -5218,12 +5264,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute with the ns prefix
          */
-        private void writeAttribute(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String attName,
-            java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeAttribute(String prefix,
+            String namespace, String attName,
+            String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeAttribute(writerPrefix, namespace, attName,
@@ -5238,10 +5284,10 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeAttribute(java.lang.String namespace,
-            java.lang.String attName, java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeAttribute(String namespace,
+            String attName, String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (namespace.equals("")) {
                 xmlWriter.writeAttribute(attName, attValue);
             } else {
@@ -5253,18 +5299,18 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeQNameAttribute(java.lang.String namespace,
-            java.lang.String attName, javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String attributeNamespace = qname.getNamespaceURI();
-            java.lang.String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
+        private void writeQNameAttribute(String namespace,
+            String attName, QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String attributeNamespace = qname.getNamespaceURI();
+            String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
 
             if (attributePrefix == null) {
                 attributePrefix = registerPrefix(xmlWriter, attributeNamespace);
             }
 
-            java.lang.String attributeValue;
+            String attributeValue;
 
             if (attributePrefix.trim().length() > 0) {
                 attributeValue = attributePrefix + ":" + qname.getLocalPart();
@@ -5284,13 +5330,13 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          *  method to handle Qnames
          */
-        private void writeQName(javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String namespaceURI = qname.getNamespaceURI();
+        private void writeQName(QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String namespaceURI = qname.getNamespaceURI();
 
             if (namespaceURI != null) {
-                java.lang.String prefix = xmlWriter.getPrefix(namespaceURI);
+                String prefix = xmlWriter.getPrefix(namespaceURI);
 
                 if (prefix == null) {
                     prefix = generatePrefix(namespaceURI);
@@ -5300,28 +5346,28 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                 if (prefix.trim().length() > 0) {
                     xmlWriter.writeCharacters(prefix + ":" +
-                        org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        ConverterUtil.convertToString(
                             qname));
                 } else {
                     // i.e this is the default namespace
-                    xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                    xmlWriter.writeCharacters(ConverterUtil.convertToString(
                             qname));
                 }
             } else {
-                xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                xmlWriter.writeCharacters(ConverterUtil.convertToString(
                         qname));
             }
         }
 
-        private void writeQNames(javax.xml.namespace.QName[] qnames,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeQNames(QName[] qnames,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (qnames != null) {
                 // we have to store this data until last moment since it is not possible to write any
                 // namespace data after writing the charactor data
-                java.lang.StringBuffer stringToWrite = new java.lang.StringBuffer();
-                java.lang.String namespaceURI = null;
-                java.lang.String prefix = null;
+                StringBuffer stringToWrite = new StringBuffer();
+                String namespaceURI = null;
+                String prefix = null;
 
                 for (int i = 0; i < qnames.length; i++) {
                     if (i > 0) {
@@ -5341,14 +5387,14 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                         if (prefix.trim().length() > 0) {
                             stringToWrite.append(prefix).append(":")
-                                         .append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                                         .append(ConverterUtil.convertToString(
                                     qnames[i]));
                         } else {
-                            stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                            stringToWrite.append(ConverterUtil.convertToString(
                                     qnames[i]));
                         }
                     } else {
-                        stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        stringToWrite.append(ConverterUtil.convertToString(
                                 qnames[i]));
                     }
                 }
@@ -5360,25 +5406,25 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Register a namespace prefix
          */
-        private java.lang.String registerPrefix(
-            javax.xml.stream.XMLStreamWriter xmlWriter,
-            java.lang.String namespace)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String prefix = xmlWriter.getPrefix(namespace);
+        private String registerPrefix(
+            XMLStreamWriter xmlWriter,
+            String namespace)
+            throws XMLStreamException {
+            String prefix = xmlWriter.getPrefix(namespace);
 
             if (prefix == null) {
                 prefix = generatePrefix(namespace);
 
-                javax.xml.namespace.NamespaceContext nsContext = xmlWriter.getNamespaceContext();
+                NamespaceContext nsContext = xmlWriter.getNamespaceContext();
 
                 while (true) {
-                    java.lang.String uri = nsContext.getNamespaceURI(prefix);
+                    String uri = nsContext.getNamespaceURI(prefix);
 
                     if ((uri == null) || (uri.length() == 0)) {
                         break;
                     }
 
-                    prefix = org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+                    prefix = BeanUtil.getUniquePrefix();
                 }
 
                 xmlWriter.writeNamespace(prefix, namespace);
@@ -5392,7 +5438,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          *  Factory class that keeps the parse method
          */
         public static class Factory {
-            private static org.apache.commons.logging.Log log = org.apache.commons.logging.LogFactory.getLog(Factory.class);
+            private static Log log = LogFactory.getLog(Factory.class);
 
             /**
              * static method to create the object
@@ -5402,15 +5448,15 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
              *                If this object is a complex type, the reader is positioned at the end element of its outer element
              */
             public static ListAllPlants parse(
-                javax.xml.stream.XMLStreamReader reader)
-                throws java.lang.Exception {
+                XMLStreamReader reader)
+                throws Exception {
                 ListAllPlants object = new ListAllPlants();
 
                 int event;
-                javax.xml.namespace.QName currentQName = null;
-                java.lang.String nillableValue = null;
-                java.lang.String prefix = "";
-                java.lang.String namespaceuri = "";
+                QName currentQName = null;
+                String nillableValue = null;
+                String prefix = "";
+                String namespaceuri = "";
 
                 try {
                     while (!reader.isStartElement() && !reader.isEndElement())
@@ -5421,11 +5467,11 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                     if (reader.getAttributeValue(
                                 "http://www.w3.org/2001/XMLSchema-instance",
                                 "type") != null) {
-                        java.lang.String fullTypeName = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
+                        String fullTypeName = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
                                 "type");
 
                         if (fullTypeName != null) {
-                            java.lang.String nsPrefix = null;
+                            String nsPrefix = null;
 
                             if (fullTypeName.indexOf(":") > -1) {
                                 nsPrefix = fullTypeName.substring(0,
@@ -5434,12 +5480,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                             nsPrefix = (nsPrefix == null) ? "" : nsPrefix;
 
-                            java.lang.String type = fullTypeName.substring(fullTypeName.indexOf(
+                            String type = fullTypeName.substring(fullTypeName.indexOf(
                                         ":") + 1);
 
                             if (!"listAllPlants".equals(type)) {
                                 //find namespace for the prefix
-                                java.lang.String nsUri = reader.getNamespaceContext()
+                                String nsUri = reader.getNamespaceContext()
                                                                .getNamespaceURI(nsPrefix);
 
                                 return (ListAllPlants) ExtensionMapper.getTypeObject(nsUri,
@@ -5450,7 +5496,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     // Note all attributes that were handled. Used to differ normal attributes
                     // from anyAttributes.
-                    java.util.Vector handledAttributes = new java.util.Vector();
+                    Vector handledAttributes = new Vector();
 
                     reader.next();
 
@@ -5459,11 +5505,11 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     if (reader.isStartElement()) {
                         // 2 - A start element we are not expecting indicates a trailing invalid property
-                        throw new org.apache.axis2.databinding.ADBException(
+                        throw new ADBException(
                             "Unexpected subelement " + reader.getName());
                     }
-                } catch (javax.xml.stream.XMLStreamException e) {
-                    throw new java.lang.Exception(e);
+                } catch (XMLStreamException e) {
+                    throw new Exception(e);
                 }
 
                 return object;
@@ -5471,7 +5517,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         } //end of factory class
     }
 
-    public static class ListAllPlantsResponse implements org.apache.axis2.databinding.ADBBean {
+    public static class ListAllPlantsResponse implements ADBBean {
         /* This type was generated from the piece of schema that had
            name = listAllPlantsResponse
            Namespace URI = http://webservice.rentit.pkg.az/
@@ -5532,7 +5578,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
             //update the setting tracker
             local_returnTracker = true;
 
-            java.util.List list = org.apache.axis2.databinding.utils.ConverterUtil.toList(local_return);
+            List list = ConverterUtil.toList(local_return);
             list.add(param);
             this.local_return = (Plant[]) list.toArray(new Plant[list.size()]);
         }
@@ -5543,27 +5589,27 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          * @param factory
          * @return org.apache.axiom.om.OMElement
          */
-        public org.apache.axiom.om.OMElement getOMElement(
-            final javax.xml.namespace.QName parentQName,
-            final org.apache.axiom.om.OMFactory factory)
-            throws org.apache.axis2.databinding.ADBException {
-            return factory.createOMElement(new org.apache.axis2.databinding.ADBDataSource(
+        public OMElement getOMElement(
+            final QName parentQName,
+            final OMFactory factory)
+            throws ADBException {
+            return factory.createOMElement(new ADBDataSource(
                     this, parentQName));
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException,
+                ADBException {
             serialize(parentQName, xmlWriter, false);
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter, boolean serializeType)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
-            java.lang.String prefix = null;
-            java.lang.String namespace = null;
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter, boolean serializeType)
+            throws XMLStreamException,
+                ADBException {
+            String prefix = null;
+            String namespace = null;
 
             prefix = parentQName.getPrefix();
             namespace = parentQName.getNamespaceURI();
@@ -5571,7 +5617,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                 xmlWriter);
 
             if (serializeType) {
-                java.lang.String namespacePrefix = registerPrefix(xmlWriter,
+                String namespacePrefix = registerPrefix(xmlWriter,
                         "http://webservice.rentit.pkg.az/");
 
                 if ((namespacePrefix != null) &&
@@ -5590,14 +5636,14 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                 if (local_return != null) {
                     for (int i = 0; i < local_return.length; i++) {
                         if (local_return[i] != null) {
-                            local_return[i].serialize(new javax.xml.namespace.QName(
+                            local_return[i].serialize(new QName(
                                     "", "return"), xmlWriter);
                         } else {
                             // we don't have to do any thing since minOccures is zero
                         }
                     }
                 } else {
-                    throw new org.apache.axis2.databinding.ADBException(
+                    throw new ADBException(
                         "return cannot be null!!");
                 }
             }
@@ -5605,23 +5651,23 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
             xmlWriter.writeEndElement();
         }
 
-        private static java.lang.String generatePrefix(
-            java.lang.String namespace) {
+        private static String generatePrefix(
+            String namespace) {
             if (namespace.equals("http://webservice.rentit.pkg.az/")) {
                 return "ns1";
             }
 
-            return org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+            return BeanUtil.getUniquePrefix();
         }
 
         /**
          * Utility method to write an element start tag.
          */
-        private void writeStartElement(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String localPart,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeStartElement(String prefix,
+            String namespace, String localPart,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeStartElement(writerPrefix, localPart, namespace);
@@ -5641,12 +5687,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute with the ns prefix
          */
-        private void writeAttribute(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String attName,
-            java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeAttribute(String prefix,
+            String namespace, String attName,
+            String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeAttribute(writerPrefix, namespace, attName,
@@ -5661,10 +5707,10 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeAttribute(java.lang.String namespace,
-            java.lang.String attName, java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeAttribute(String namespace,
+            String attName, String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (namespace.equals("")) {
                 xmlWriter.writeAttribute(attName, attValue);
             } else {
@@ -5676,18 +5722,18 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeQNameAttribute(java.lang.String namespace,
-            java.lang.String attName, javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String attributeNamespace = qname.getNamespaceURI();
-            java.lang.String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
+        private void writeQNameAttribute(String namespace,
+            String attName, QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String attributeNamespace = qname.getNamespaceURI();
+            String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
 
             if (attributePrefix == null) {
                 attributePrefix = registerPrefix(xmlWriter, attributeNamespace);
             }
 
-            java.lang.String attributeValue;
+            String attributeValue;
 
             if (attributePrefix.trim().length() > 0) {
                 attributeValue = attributePrefix + ":" + qname.getLocalPart();
@@ -5707,13 +5753,13 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          *  method to handle Qnames
          */
-        private void writeQName(javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String namespaceURI = qname.getNamespaceURI();
+        private void writeQName(QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String namespaceURI = qname.getNamespaceURI();
 
             if (namespaceURI != null) {
-                java.lang.String prefix = xmlWriter.getPrefix(namespaceURI);
+                String prefix = xmlWriter.getPrefix(namespaceURI);
 
                 if (prefix == null) {
                     prefix = generatePrefix(namespaceURI);
@@ -5723,28 +5769,28 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                 if (prefix.trim().length() > 0) {
                     xmlWriter.writeCharacters(prefix + ":" +
-                        org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        ConverterUtil.convertToString(
                             qname));
                 } else {
                     // i.e this is the default namespace
-                    xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                    xmlWriter.writeCharacters(ConverterUtil.convertToString(
                             qname));
                 }
             } else {
-                xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                xmlWriter.writeCharacters(ConverterUtil.convertToString(
                         qname));
             }
         }
 
-        private void writeQNames(javax.xml.namespace.QName[] qnames,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeQNames(QName[] qnames,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (qnames != null) {
                 // we have to store this data until last moment since it is not possible to write any
                 // namespace data after writing the charactor data
-                java.lang.StringBuffer stringToWrite = new java.lang.StringBuffer();
-                java.lang.String namespaceURI = null;
-                java.lang.String prefix = null;
+                StringBuffer stringToWrite = new StringBuffer();
+                String namespaceURI = null;
+                String prefix = null;
 
                 for (int i = 0; i < qnames.length; i++) {
                     if (i > 0) {
@@ -5764,14 +5810,14 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                         if (prefix.trim().length() > 0) {
                             stringToWrite.append(prefix).append(":")
-                                         .append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                                         .append(ConverterUtil.convertToString(
                                     qnames[i]));
                         } else {
-                            stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                            stringToWrite.append(ConverterUtil.convertToString(
                                     qnames[i]));
                         }
                     } else {
-                        stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        stringToWrite.append(ConverterUtil.convertToString(
                                 qnames[i]));
                     }
                 }
@@ -5783,25 +5829,25 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Register a namespace prefix
          */
-        private java.lang.String registerPrefix(
-            javax.xml.stream.XMLStreamWriter xmlWriter,
-            java.lang.String namespace)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String prefix = xmlWriter.getPrefix(namespace);
+        private String registerPrefix(
+            XMLStreamWriter xmlWriter,
+            String namespace)
+            throws XMLStreamException {
+            String prefix = xmlWriter.getPrefix(namespace);
 
             if (prefix == null) {
                 prefix = generatePrefix(namespace);
 
-                javax.xml.namespace.NamespaceContext nsContext = xmlWriter.getNamespaceContext();
+                NamespaceContext nsContext = xmlWriter.getNamespaceContext();
 
                 while (true) {
-                    java.lang.String uri = nsContext.getNamespaceURI(prefix);
+                    String uri = nsContext.getNamespaceURI(prefix);
 
                     if ((uri == null) || (uri.length() == 0)) {
                         break;
                     }
 
-                    prefix = org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+                    prefix = BeanUtil.getUniquePrefix();
                 }
 
                 xmlWriter.writeNamespace(prefix, namespace);
@@ -5815,7 +5861,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          *  Factory class that keeps the parse method
          */
         public static class Factory {
-            private static org.apache.commons.logging.Log log = org.apache.commons.logging.LogFactory.getLog(Factory.class);
+            private static Log log = LogFactory.getLog(Factory.class);
 
             /**
              * static method to create the object
@@ -5825,15 +5871,15 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
              *                If this object is a complex type, the reader is positioned at the end element of its outer element
              */
             public static ListAllPlantsResponse parse(
-                javax.xml.stream.XMLStreamReader reader)
-                throws java.lang.Exception {
+                XMLStreamReader reader)
+                throws Exception {
                 ListAllPlantsResponse object = new ListAllPlantsResponse();
 
                 int event;
-                javax.xml.namespace.QName currentQName = null;
-                java.lang.String nillableValue = null;
-                java.lang.String prefix = "";
-                java.lang.String namespaceuri = "";
+                QName currentQName = null;
+                String nillableValue = null;
+                String prefix = "";
+                String namespaceuri = "";
 
                 try {
                     while (!reader.isStartElement() && !reader.isEndElement())
@@ -5844,11 +5890,11 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                     if (reader.getAttributeValue(
                                 "http://www.w3.org/2001/XMLSchema-instance",
                                 "type") != null) {
-                        java.lang.String fullTypeName = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
+                        String fullTypeName = reader.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance",
                                 "type");
 
                         if (fullTypeName != null) {
-                            java.lang.String nsPrefix = null;
+                            String nsPrefix = null;
 
                             if (fullTypeName.indexOf(":") > -1) {
                                 nsPrefix = fullTypeName.substring(0,
@@ -5857,12 +5903,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                             nsPrefix = (nsPrefix == null) ? "" : nsPrefix;
 
-                            java.lang.String type = fullTypeName.substring(fullTypeName.indexOf(
+                            String type = fullTypeName.substring(fullTypeName.indexOf(
                                         ":") + 1);
 
                             if (!"listAllPlantsResponse".equals(type)) {
                                 //find namespace for the prefix
-                                java.lang.String nsUri = reader.getNamespaceContext()
+                                String nsUri = reader.getNamespaceContext()
                                                                .getNamespaceURI(nsPrefix);
 
                                 return (ListAllPlantsResponse) ExtensionMapper.getTypeObject(nsUri,
@@ -5873,17 +5919,17 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     // Note all attributes that were handled. Used to differ normal attributes
                     // from anyAttributes.
-                    java.util.Vector handledAttributes = new java.util.Vector();
+                    Vector handledAttributes = new Vector();
 
                     reader.next();
 
-                    java.util.ArrayList list1 = new java.util.ArrayList();
+                    ArrayList list1 = new ArrayList();
 
                     while (!reader.isStartElement() && !reader.isEndElement())
                         reader.next();
 
                     if (reader.isStartElement() &&
-                            new javax.xml.namespace.QName("", "return").equals(
+                            new QName("", "return").equals(
                                 reader.getName())) {
                         // Process the array and step past its final element's end.
                         list1.add(Plant.Factory.parse(reader));
@@ -5908,7 +5954,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                                 //two continuous end elements means we are exiting the xml structure
                                 loopDone1 = true;
                             } else {
-                                if (new javax.xml.namespace.QName("", "return").equals(
+                                if (new QName("", "return").equals(
                                             reader.getName())) {
                                     list1.add(Plant.Factory.parse(reader));
                                 } else {
@@ -5918,7 +5964,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                         }
 
                         // call the converter utility  to convert and set the array
-                        object.set_return((Plant[]) org.apache.axis2.databinding.utils.ConverterUtil.convertToArray(
+                        object.set_return((Plant[]) ConverterUtil.convertToArray(
                                 Plant.class, list1));
                     } // End of if for expected property start element
 
@@ -5930,11 +5976,11 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     if (reader.isStartElement()) {
                         // 2 - A start element we are not expecting indicates a trailing invalid property
-                        throw new org.apache.axis2.databinding.ADBException(
+                        throw new ADBException(
                             "Unexpected subelement " + reader.getName());
                     }
-                } catch (javax.xml.stream.XMLStreamException e) {
-                    throw new java.lang.Exception(e);
+                } catch (XMLStreamException e) {
+                    throw new Exception(e);
                 }
 
                 return object;
@@ -5942,8 +5988,8 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         } //end of factory class
     }
 
-    public static class GetPlantByIDResponseE implements org.apache.axis2.databinding.ADBBean {
-        public static final javax.xml.namespace.QName MY_QNAME = new javax.xml.namespace.QName("http://webservice.rentit.pkg.az/",
+    public static class GetPlantByIDResponseE implements ADBBean {
+        public static final QName MY_QNAME = new QName("http://webservice.rentit.pkg.az/",
                 "getPlantByIDResponse", "ns1");
 
         /**
@@ -5973,51 +6019,51 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          * @param factory
          * @return org.apache.axiom.om.OMElement
          */
-        public org.apache.axiom.om.OMElement getOMElement(
-            final javax.xml.namespace.QName parentQName,
-            final org.apache.axiom.om.OMFactory factory)
-            throws org.apache.axis2.databinding.ADBException {
-            return factory.createOMElement(new org.apache.axis2.databinding.ADBDataSource(
+        public OMElement getOMElement(
+            final QName parentQName,
+            final OMFactory factory)
+            throws ADBException {
+            return factory.createOMElement(new ADBDataSource(
                     this, MY_QNAME));
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException,
+                ADBException {
             serialize(parentQName, xmlWriter, false);
         }
 
-        public void serialize(final javax.xml.namespace.QName parentQName,
-            javax.xml.stream.XMLStreamWriter xmlWriter, boolean serializeType)
-            throws javax.xml.stream.XMLStreamException,
-                org.apache.axis2.databinding.ADBException {
+        public void serialize(final QName parentQName,
+            XMLStreamWriter xmlWriter, boolean serializeType)
+            throws XMLStreamException,
+                ADBException {
             //We can safely assume an element has only one type associated with it
             if (localGetPlantByIDResponse == null) {
-                throw new org.apache.axis2.databinding.ADBException(
+                throw new ADBException(
                     "getPlantByIDResponse cannot be null!");
             }
 
             localGetPlantByIDResponse.serialize(MY_QNAME, xmlWriter);
         }
 
-        private static java.lang.String generatePrefix(
-            java.lang.String namespace) {
+        private static String generatePrefix(
+            String namespace) {
             if (namespace.equals("http://webservice.rentit.pkg.az/")) {
                 return "ns1";
             }
 
-            return org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+            return BeanUtil.getUniquePrefix();
         }
 
         /**
          * Utility method to write an element start tag.
          */
-        private void writeStartElement(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String localPart,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeStartElement(String prefix,
+            String namespace, String localPart,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeStartElement(writerPrefix, localPart, namespace);
@@ -6037,12 +6083,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute with the ns prefix
          */
-        private void writeAttribute(java.lang.String prefix,
-            java.lang.String namespace, java.lang.String attName,
-            java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String writerPrefix = xmlWriter.getPrefix(namespace);
+        private void writeAttribute(String prefix,
+            String namespace, String attName,
+            String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String writerPrefix = xmlWriter.getPrefix(namespace);
 
             if (writerPrefix != null) {
                 xmlWriter.writeAttribute(writerPrefix, namespace, attName,
@@ -6057,10 +6103,10 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeAttribute(java.lang.String namespace,
-            java.lang.String attName, java.lang.String attValue,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeAttribute(String namespace,
+            String attName, String attValue,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (namespace.equals("")) {
                 xmlWriter.writeAttribute(attName, attValue);
             } else {
@@ -6072,18 +6118,18 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Util method to write an attribute without the ns prefix
          */
-        private void writeQNameAttribute(java.lang.String namespace,
-            java.lang.String attName, javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String attributeNamespace = qname.getNamespaceURI();
-            java.lang.String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
+        private void writeQNameAttribute(String namespace,
+            String attName, QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String attributeNamespace = qname.getNamespaceURI();
+            String attributePrefix = xmlWriter.getPrefix(attributeNamespace);
 
             if (attributePrefix == null) {
                 attributePrefix = registerPrefix(xmlWriter, attributeNamespace);
             }
 
-            java.lang.String attributeValue;
+            String attributeValue;
 
             if (attributePrefix.trim().length() > 0) {
                 attributeValue = attributePrefix + ":" + qname.getLocalPart();
@@ -6103,13 +6149,13 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          *  method to handle Qnames
          */
-        private void writeQName(javax.xml.namespace.QName qname,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String namespaceURI = qname.getNamespaceURI();
+        private void writeQName(QName qname,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
+            String namespaceURI = qname.getNamespaceURI();
 
             if (namespaceURI != null) {
-                java.lang.String prefix = xmlWriter.getPrefix(namespaceURI);
+                String prefix = xmlWriter.getPrefix(namespaceURI);
 
                 if (prefix == null) {
                     prefix = generatePrefix(namespaceURI);
@@ -6119,28 +6165,28 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                 if (prefix.trim().length() > 0) {
                     xmlWriter.writeCharacters(prefix + ":" +
-                        org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        ConverterUtil.convertToString(
                             qname));
                 } else {
                     // i.e this is the default namespace
-                    xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                    xmlWriter.writeCharacters(ConverterUtil.convertToString(
                             qname));
                 }
             } else {
-                xmlWriter.writeCharacters(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                xmlWriter.writeCharacters(ConverterUtil.convertToString(
                         qname));
             }
         }
 
-        private void writeQNames(javax.xml.namespace.QName[] qnames,
-            javax.xml.stream.XMLStreamWriter xmlWriter)
-            throws javax.xml.stream.XMLStreamException {
+        private void writeQNames(QName[] qnames,
+            XMLStreamWriter xmlWriter)
+            throws XMLStreamException {
             if (qnames != null) {
                 // we have to store this data until last moment since it is not possible to write any
                 // namespace data after writing the charactor data
-                java.lang.StringBuffer stringToWrite = new java.lang.StringBuffer();
-                java.lang.String namespaceURI = null;
-                java.lang.String prefix = null;
+                StringBuffer stringToWrite = new StringBuffer();
+                String namespaceURI = null;
+                String prefix = null;
 
                 for (int i = 0; i < qnames.length; i++) {
                     if (i > 0) {
@@ -6160,14 +6206,14 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                         if (prefix.trim().length() > 0) {
                             stringToWrite.append(prefix).append(":")
-                                         .append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                                         .append(ConverterUtil.convertToString(
                                     qnames[i]));
                         } else {
-                            stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                            stringToWrite.append(ConverterUtil.convertToString(
                                     qnames[i]));
                         }
                     } else {
-                        stringToWrite.append(org.apache.axis2.databinding.utils.ConverterUtil.convertToString(
+                        stringToWrite.append(ConverterUtil.convertToString(
                                 qnames[i]));
                     }
                 }
@@ -6179,25 +6225,25 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
         /**
          * Register a namespace prefix
          */
-        private java.lang.String registerPrefix(
-            javax.xml.stream.XMLStreamWriter xmlWriter,
-            java.lang.String namespace)
-            throws javax.xml.stream.XMLStreamException {
-            java.lang.String prefix = xmlWriter.getPrefix(namespace);
+        private String registerPrefix(
+            XMLStreamWriter xmlWriter,
+            String namespace)
+            throws XMLStreamException {
+            String prefix = xmlWriter.getPrefix(namespace);
 
             if (prefix == null) {
                 prefix = generatePrefix(namespace);
 
-                javax.xml.namespace.NamespaceContext nsContext = xmlWriter.getNamespaceContext();
+                NamespaceContext nsContext = xmlWriter.getNamespaceContext();
 
                 while (true) {
-                    java.lang.String uri = nsContext.getNamespaceURI(prefix);
+                    String uri = nsContext.getNamespaceURI(prefix);
 
                     if ((uri == null) || (uri.length() == 0)) {
                         break;
                     }
 
-                    prefix = org.apache.axis2.databinding.utils.BeanUtil.getUniquePrefix();
+                    prefix = BeanUtil.getUniquePrefix();
                 }
 
                 xmlWriter.writeNamespace(prefix, namespace);
@@ -6211,7 +6257,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
          *  Factory class that keeps the parse method
          */
         public static class Factory {
-            private static org.apache.commons.logging.Log log = org.apache.commons.logging.LogFactory.getLog(Factory.class);
+            private static Log log = LogFactory.getLog(Factory.class);
 
             /**
              * static method to create the object
@@ -6221,15 +6267,15 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
              *                If this object is a complex type, the reader is positioned at the end element of its outer element
              */
             public static GetPlantByIDResponseE parse(
-                javax.xml.stream.XMLStreamReader reader)
-                throws java.lang.Exception {
+                XMLStreamReader reader)
+                throws Exception {
                 GetPlantByIDResponseE object = new GetPlantByIDResponseE();
 
                 int event;
-                javax.xml.namespace.QName currentQName = null;
-                java.lang.String nillableValue = null;
-                java.lang.String prefix = "";
-                java.lang.String namespaceuri = "";
+                QName currentQName = null;
+                String nillableValue = null;
+                String prefix = "";
+                String namespaceuri = "";
 
                 try {
                     while (!reader.isStartElement() && !reader.isEndElement())
@@ -6239,12 +6285,12 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                     // Note all attributes that were handled. Used to differ normal attributes
                     // from anyAttributes.
-                    java.util.Vector handledAttributes = new java.util.Vector();
+                    Vector handledAttributes = new Vector();
 
                     while (!reader.isEndElement()) {
                         if (reader.isStartElement()) {
                             if (reader.isStartElement() &&
-                                    new javax.xml.namespace.QName(
+                                    new QName(
                                         "http://webservice.rentit.pkg.az/",
                                         "getPlantByIDResponse").equals(
                                         reader.getName())) {
@@ -6254,7 +6300,7 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
 
                             else {
                                 // 3 - A start element we are not expecting indicates an invalid parameter was passed
-                                throw new org.apache.axis2.databinding.ADBException(
+                                throw new ADBException(
                                     "Unexpected subelement " +
                                     reader.getName());
                             }
@@ -6262,8 +6308,8 @@ public class PlantWSServiceStub extends org.apache.axis2.client.Stub {
                             reader.next();
                         }
                     } // end of while loop
-                } catch (javax.xml.stream.XMLStreamException e) {
-                    throw new java.lang.Exception(e);
+                } catch (XMLStreamException e) {
+                    throw new Exception(e);
                 }
 
                 return object;
