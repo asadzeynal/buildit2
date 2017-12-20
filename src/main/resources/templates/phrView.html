@@ -1,0 +1,30 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Plant Hire Request</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+<h2>Plant Hire Request</h2>
+<table>
+    <tr>
+        <td><b>ID</b></td>
+        <td><b>Start Date</b></td>
+        <td><b>End Date</b></td>
+        <td><b>Contact</b></td>
+        <td><b>Status</b></td>
+        <td><b>Plant ID</b></td>
+        <td><b>Plant Name</b></td>
+    </tr>
+    <tr th:object="${phr}">
+        <td th:text="${phr.id}"></td>
+        <td th:text="${phr.start}"></td>
+        <td th:text="${phr.endr}"></td>
+        <td th:text="${phr.contact}"></td>
+        <td th:text="${phr.status}"></td>
+        <td th:text="${phr.plant.id}"></td>
+        <td th:text="${phr.plant.name}"></td>
+    </tr>
+</table>
+</body>
+</html>
