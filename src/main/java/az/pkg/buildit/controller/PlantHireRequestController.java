@@ -84,6 +84,7 @@ public class PlantHireRequestController {
         }
         if (success) {
             phr.setStatus(PlantHireRequestStatus.sentToSupplier);
+            model.addAttribute("Success");
             return "success";
         }
         else return "error";
