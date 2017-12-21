@@ -23,6 +23,7 @@ import java.rmi.RemoteException;
 import java.sql.Date;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.List;
 
 @Controller
 public class PlantHireRequestController {
@@ -105,10 +106,11 @@ public class PlantHireRequestController {
         PlantWSServiceStub plws = new PlantWSServiceStub();
         PlantWSServiceStub.Plant plant = plws.getPlantByID(plantws).getGetPlantByIDResponse().get_return();
         Plant p  = new Plant();
+        p.setId(plant.getId());
         p.setPrice(plant.getPrice());
         p.setName(plant.getName());
         p.setDescription(plant.getDescription());
-        plantService.create(p);
+        plantService.edit(p);
         phr.setPlant(p);
         phr.setContact(session.getAttribute("username").toString());
         phr.setCost(phr.getPlant().getPrice());
@@ -138,10 +140,11 @@ public class PlantHireRequestController {
         PlantWSServiceStub plws = new PlantWSServiceStub();
         PlantWSServiceStub.Plant plant = plws.getPlantByID(plantws).getGetPlantByIDResponse().get_return();
         Plant p  = new Plant();
+        p.setId(plant.getId());
         p.setPrice(plant.getPrice());
         p.setName(plant.getName());
         p.setDescription(plant.getDescription());
-        plantService.create(p);
+        plantService.edit(p);
         phr.setPlant(p);
         phr.setCost(phr.getPlant().getPrice());
         phr.setStart(Date.valueOf(map.getFirst("start")));
@@ -198,5 +201,11 @@ public class PlantHireRequestController {
         PlantHireRequest phr = service.find(Long.parseLong(phrId));
         model.addAttribute("phr", phr);
         return "phrView";
+    }
+    @RequestMapping(method = RequestMethod.GET, value = "/phr/all")
+    public String getAllPlantHireRequests(Model model){
+        List<PlantHireRequest> phrs = service.findAll();
+        model.addAttribute("phrs", phrs);
+        return "phrs";
     }
 }

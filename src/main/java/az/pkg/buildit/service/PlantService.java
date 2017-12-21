@@ -18,6 +18,10 @@ public class PlantService {
         em.persist(plant);
     }
 
+    public void edit(Plant plant){
+        em.merge(plant);
+    }
+
     public Plant find(long id){
         return em.find(Plant.class, id);
     }

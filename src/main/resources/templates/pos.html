@@ -5,11 +5,11 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 </head>
 <body>
-<h2>Plant Hire Request</h2>
+<h2>Purchase Orders</h2>
 <table>
     <tr>
         <td><b>ID</b></td>
-        <td><b>Contact</b></td>
+        <!--<td><b>Contact</b></td>-->
         <!--<td><b>Start date</b></td>-->
         <!--<td><b>End date</b></td>-->
         <td><b>Status</b></td>
@@ -18,12 +18,12 @@
     </tr>
     <tr th:object="${po}">
         <td th:text="${po.id}"></td>
-        <td th:text="${po.contact}"></td>
+        <!--<td th:text="${po.contact}"></td>-->
         <!--<td th:text="${po.start}"></td>-->
         <!--<td th:text="${po.endr}"></td>-->
         <td th:text="${po.purchaseOrderStatus}"></td>
-        <!--<td th:text="${po.plant.id}"></td>-->
-        <!--<td th:text="${po.plant.name}"></td>-->
+        <td th:text="${po.plant.id}"></td>
+        <td th:text="${po.plant.name}"></td>
     </tr>
 </table>
 </body>

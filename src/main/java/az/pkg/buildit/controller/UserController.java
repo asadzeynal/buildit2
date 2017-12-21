@@ -22,7 +22,9 @@ public class UserController {
     @RequestMapping(method = RequestMethod.GET, value = "/")
     public String root(HttpSession session){
         if (session.getAttribute("username") == null) return "login";
-         else return "index";
+        else if (session.getAttribute("role").equals(Role.siteEngineer)) return "siteIndex";
+        else if (session.getAttribute("role").equals(Role.worksEngineer)) return "worksIndex";
+        else return "index";
     }
 
     @RequestMapping(method = RequestMethod.POST, value = "/auth")
@@ -34,10 +36,14 @@ public class UserController {
             if (user.getPassword().equals(pwd)) {
                 session.setAttribute("username", un);
                 session.setAttribute("role", user.getRole());
-                System.out.println(session.getId());
+            }
+            else {
+                return "error";
             }
         }
         model.addAttribute("message", "logged in");
+        if (session.getAttribute("role").equals(Role.siteEngineer)) return "siteIndex";
+        else if (session.getAttribute("role").equals(Role.worksEngineer)) return "worksIndex";
         return "index";
     }
 }

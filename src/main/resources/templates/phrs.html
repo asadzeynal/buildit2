@@ -1,0 +1,30 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Purchase Orders</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+<H2>Plant Hire Requests</H2>
+<table>
+    <tr>
+        <td><b>ID</b></td>
+        <td><b>Contact</b></td>
+        <td><b>Status</b></td>
+        <td><b>Plant ID</b></td>
+        <td><b>Plant Name</b></td>
+    </tr>
+    <tr th:each="phr :${phrs}">
+        <td th:text="${phr.id}"></td>
+        <td th:text="${phr.contact}"></td>
+        <td th:text="${phr.status}"></td>
+        <td th:text="${phr.plant.id}"></td>
+        <td th:text="${phr.plant.name}"></td>
+    </tr>
+</table>
+</body>
+</html>
+
+<!--<div class="row">-->
+
+<!--</div>-->
