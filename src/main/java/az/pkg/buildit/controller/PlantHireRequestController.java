@@ -73,6 +73,8 @@ public class PlantHireRequestController {
         purchaseOrder.setPlant(posplant);
         stub.setCreatePurchaseOrder(new PurchaseOrderWSServiceStub.CreatePurchaseOrder());
         stub.getCreatePurchaseOrder().setArg0(purchaseOrder);
+        phr.setStatus(PlantHireRequestStatus.sentToSupplier);
+        service.modify(phr);
         PurchaseOrderWSServiceStub s = null;
         boolean success = false;
         try {
@@ -84,7 +86,6 @@ public class PlantHireRequestController {
             e.printStackTrace();
         }
         if (success) {
-            phr.setStatus(PlantHireRequestStatus.sentToSupplier);
             model.addAttribute("Success");
             return "success";
         }
@@ -147,10 +148,11 @@ public class PlantHireRequestController {
         plantService.edit(p);
         phr.setPlant(p);
         phr.setCost(phr.getPlant().getPrice());
+        phr.setStatus(PlantHireRequestStatus.applied);
         phr.setStart(Date.valueOf(map.getFirst("start")));
         phr.setEndr(Date.valueOf(map.getFirst("end")));
-        service.create(phr);
-        model.addAttribute("message", "PlantHireRequest successfully created");
+        service.modify(phr);
+        model.addAttribute("message", "PlantHireRequest successfully modified");
         return "success";
     }
 
@@ -167,13 +169,21 @@ public class PlantHireRequestController {
         GregorianCalendar c2 = new GregorianCalendar();
         c1.setTime(date);
         c2.setTime(Calendar.getInstance().getTime());
-        int d1 = c1.get(Calendar.DAY_OF_YEAR);
-        int d2 = c2.get(Calendar.DAY_OF_YEAR);
-        int diff = d2 - d1;
-        if (diff <= 1) {
-            model.addAttribute("message", "It is too late to cancel this request");
-            return "error";
+        int y1 = c1.get(Calendar.YEAR);
+        int y2 = c2.get(Calendar.YEAR);
+        System.out.println(y2 + "  asd" + y1);
+        if (y2 == y1) {
+            int d1 = c1.get(Calendar.DAY_OF_YEAR);
+            int d2 = c2.get(Calendar.DAY_OF_YEAR);
+            System.out.println(d1 + "fds  " + d2);
+            int diff = d1 - d2;
+            if (diff <= 1) {
+                model.addAttribute("message", "It is too late to cancel this request");
+                return "error";
+            }
         }
+//  System.out.println(d2-d1);
+
         if (phr.getStatus().equals(PlantHireRequestStatus.applied)){
             phr.setStatus(PlantHireRequestStatus.cancelled);
             service.create(phr);
